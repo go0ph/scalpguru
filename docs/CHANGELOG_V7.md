@@ -87,11 +87,27 @@ input double ExtendedTrailMultiplier = 1.5; // Trail multiplier for remaining po
 
 ## Expected Performance
 
-Based on V6 backtest with adjustments:
-- **Profit Target**: $600 (10% of $6,000)
-- **Max Acceptable Drawdown**: $330 (5.5% of $6,000)
-- **Daily Loss Limit**: $150 (2.5% of $6,000)
-- **Estimated time to pass**: 2-4 months (conservative)
+### V7 Default Settings (Conservative)
+- **Monthly Profit**: ~$119/month
+- **Time to pass $600 target**: ~5 months
+- **Max Daily Risk**: 1% (very safe)
+
+### V7 Aggressive Settings (3-Month Pass)
+- **Monthly Profit**: ~$200-220/month
+- **Time to pass $600 target**: ~3 months
+- **Max Daily Risk**: 3% (at FundedNext limit)
+
+See [3-Month Funded Pass Guide](FUNDED_3MONTH_GUIDE.md) for aggressive settings.
+
+### Key Settings Comparison
+
+| Setting | Default | Aggressive |
+|---------|---------|------------|
+| RiskPerTradePercent | 0.5% | 1.0% |
+| MaxTradesPerDay | 2 | 3 |
+| DailyLossLimitPercent | 2.5% | 2.9% |
+| RSI_Oversold | 30 | 32 |
+| RequireKeltnerRetest | true | false |
 
 ## Usage for FundedNext Challenge
 
@@ -100,6 +116,7 @@ Based on V6 backtest with adjustments:
 3. Keep sells disabled (`AllowSellTrades = false`)
 4. Run on XAUUSD M15 timeframe
 5. Monitor the journal for funded account warnings
+6. **For faster pass**: Use aggressive settings from [FUNDED_3MONTH_GUIDE.md](FUNDED_3MONTH_GUIDE.md)
 
 ## Risk Warning
 

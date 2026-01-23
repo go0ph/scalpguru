@@ -28,23 +28,30 @@ A MetaTrader 5 Expert Advisor that implements a mean reversion strategy using Ke
 - Info Panel with real-time status, ATR, RSI, P/L
 - RSI momentum filter, volume filter, session filter
 
-## V6 Backtest Results (Baseline)
+## Backtest Results Comparison (V6 vs V7)
 
 **Period:** January 2025 - December 2025 (12 months)
 **Symbol:** XAUUSD M15
 
-| Metric | Value |
-|--------|-------|
-| **Total Net Profit** | $1,960.93 |
-| **Monthly Average** | ~$163.41/month |
-| **Profit Factor** | 1.62 |
-| **Win Rate** | 59.52% |
-| **Total Trades** | 126 |
-| **Avg Win / Avg Loss** | $68.27 / $60.86 |
-| **Max Drawdown** | 9.10% |
-| **Recovery Factor** | 3.00 |
+| Metric | V6 | V7 | Notes |
+|--------|----|----|-------|
+| **Total Net Profit** | $1,960.93 | $1,430.08 | V6 +37% more profit |
+| **Monthly Average** | ~$163.41 | ~$119.17 | V6 faster to targets |
+| **Profit Factor** | 1.62 | 1.93 | V7 more efficient |
+| **Win Rate** | 59.52% | 73.74% | V7 +24% higher |
+| **Total Trades** | 126 | 99 | V7 more selective |
+| **Max Drawdown** | 9.10% | 8.83% | V7 slightly safer |
+| **Recovery Factor** | 3.00 | 2.28 | V6 recovers faster |
+| **Sharpe Ratio** | 11.36 | 14.48 | V7 more consistent |
 
-**Note:** V6 results are with buys only (sells disabled). V7 aims to improve on these results.
+### Funded Account Pass Timeline
+
+| Version | Time to $600 (10%) | Time to $2,000 |
+|---------|-------------------|----------------|
+| **V6** | ~2.7 months | ~12.2 months |
+| **V7** | ~3.7 months | ~16.8 months |
+
+**Recommendation:** V7 is safer with higher win rate and lower drawdown, but V6 passes funded challenges faster. Both versions have sells disabled (buys only). See [V7 Analysis](docs/V7_BACKTEST_ANALYSIS.md) for detailed comparison.
 
 ## Strategy Overview
 
@@ -178,8 +185,14 @@ V7 includes improved sell logic with better candle confirmation, but sells remai
 - 🛑 Emergency close all positions at max drawdown
 
 ### Expected Timeline:
-- With ~$163/month profit (V6 baseline), expect 3-4 months to pass
-- V7 optimizations may reduce this to 2-3 months
+
+| Settings | Monthly Profit | Time to Pass |
+|----------|---------------|--------------|
+| V7 Default (Conservative) | ~$119 | ~5 months |
+| V6 Settings | ~$163 | ~3.7 months |
+| **V7 Aggressive** | ~$200-220 | **~3 months** ✅ |
+
+**Want to pass in 3 months?** See the [3-Month Funded Pass Guide](docs/FUNDED_3MONTH_GUIDE.md) for optimized aggressive settings.
 
 ## License
 
