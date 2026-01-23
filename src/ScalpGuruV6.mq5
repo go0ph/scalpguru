@@ -88,6 +88,7 @@ input color PanelProfitColor = clrLime;           // Profit text color
 input color PanelLossColor = clrRed;              // Loss text color
 input color BuyArrowColor = clrLime;              // Buy entry arrow color
 input color SellArrowColor = clrRed;              // Sell entry arrow color
+input int KeltnerBarsToShow = 100;                // Number of historical bars for channel display
 
 //--- Global Variables
 double atrValue, keltnerUpper, keltnerLower, keltnerMid;
@@ -100,6 +101,10 @@ datetime lastTradeDay = 0;
 bool trailingActive = false;
 double entryPrice = 0;
 double initialSL = 0;
+datetime lastBarTime = 0;  // Track bar changes for efficient redraw
+
+// Constants
+#define PIPS_TO_POINTS 10  // Multiplier to convert pips to points
 
 //--- Include Libraries
 #include <Trade\Trade.mqh>
@@ -629,92 +634,117 @@ void OnTick()
 //+------------------------------------------------------------------+
 void DrawKeltnerChannels()
 {
-   int barsToShow = 100;
-   datetime times[];
-   double highs[], lows[];
+   // Only redraw channel when a new bar forms to improve performance
+   datetime currentBarTime = iTime(_Symbol, timeframe, 0);
+   bool isNewBar = (currentBarTime != lastBarTime);
    
-   ArraySetAsSeries(times, true);
-   ArraySetAsSeries(highs, true);
-   ArraySetAsSeries(lows, true);
-   
-   CopyTime(_Symbol, timeframe, 0, barsToShow, times);
-   CopyHigh(_Symbol, timeframe, 0, barsToShow, highs);
-   CopyLow(_Symbol, timeframe, 0, barsToShow, lows);
-   
-   // Delete old channel lines
-   ObjectDelete(0, "KC_Upper");
-   ObjectDelete(0, "KC_Middle");
-   ObjectDelete(0, "KC_Lower");
-   
-   // Create arrays for channel values
-   double upperBand[], middleBand[], lowerBand[];
-   double tempATR[], tempMA[];
-   ArrayResize(upperBand, barsToShow);
-   ArrayResize(middleBand, barsToShow);
-   ArrayResize(lowerBand, barsToShow);
-   
-   // Get historical ATR and MA values
-   CopyBuffer(atrHandle, 0, 0, barsToShow, tempATR);
-   CopyBuffer(maHandle, 0, 0, barsToShow, tempMA);
-   ArraySetAsSeries(tempATR, true);
-   ArraySetAsSeries(tempMA, true);
-   
-   // Calculate channel values for each bar
-   for(int i = 0; i < barsToShow; i++)
+   if(isNewBar)
    {
-      middleBand[i] = tempMA[i];
-      upperBand[i] = tempMA[i] + KeltnerMultiplier * tempATR[i];
-      lowerBand[i] = tempMA[i] - KeltnerMultiplier * tempATR[i];
+      lastBarTime = currentBarTime;
+      
+      int barsToShow = KeltnerBarsToShow;
+      datetime times[];
+      
+      ArraySetAsSeries(times, true);
+      CopyTime(_Symbol, timeframe, 0, barsToShow, times);
+      
+      // Create arrays for channel values
+      double upperBand[], middleBand[], lowerBand[];
+      double tempATR[], tempMA[];
+      ArrayResize(upperBand, barsToShow);
+      ArrayResize(middleBand, barsToShow);
+      ArrayResize(lowerBand, barsToShow);
+      
+      // Get historical ATR and MA values
+      CopyBuffer(atrHandle, 0, 0, barsToShow, tempATR);
+      CopyBuffer(maHandle, 0, 0, barsToShow, tempMA);
+      ArraySetAsSeries(tempATR, true);
+      ArraySetAsSeries(tempMA, true);
+      
+      // Calculate channel values for each bar
+      for(int i = 0; i < barsToShow; i++)
+      {
+         middleBand[i] = tempMA[i];
+         upperBand[i] = tempMA[i] + KeltnerMultiplier * tempATR[i];
+         lowerBand[i] = tempMA[i] - KeltnerMultiplier * tempATR[i];
+      }
+      
+      // Draw or update upper band segments
+      for(int i = 0; i < barsToShow - 1; i++)
+      {
+         string objName = "KC_U" + IntegerToString(i);
+         if(ObjectFind(0, objName) < 0)
+         {
+            ObjectCreate(0, objName, OBJ_TREND, 0, times[i+1], upperBand[i+1], times[i], upperBand[i]);
+            ObjectSetInteger(0, objName, OBJPROP_COLOR, KeltnerUpperColor);
+            ObjectSetInteger(0, objName, OBJPROP_STYLE, STYLE_SOLID);
+            ObjectSetInteger(0, objName, OBJPROP_WIDTH, 2);
+            ObjectSetInteger(0, objName, OBJPROP_RAY, false);
+            ObjectSetInteger(0, objName, OBJPROP_BACK, true);
+         }
+         else
+         {
+            ObjectMove(0, objName, 0, times[i+1], upperBand[i+1]);
+            ObjectMove(0, objName, 1, times[i], upperBand[i]);
+         }
+      }
+      
+      // Draw or update middle band segments
+      for(int i = 0; i < barsToShow - 1; i++)
+      {
+         string objName = "KC_M" + IntegerToString(i);
+         if(ObjectFind(0, objName) < 0)
+         {
+            ObjectCreate(0, objName, OBJ_TREND, 0, times[i+1], middleBand[i+1], times[i], middleBand[i]);
+            ObjectSetInteger(0, objName, OBJPROP_COLOR, KeltnerMiddleColor);
+            ObjectSetInteger(0, objName, OBJPROP_STYLE, STYLE_DOT);
+            ObjectSetInteger(0, objName, OBJPROP_WIDTH, 1);
+            ObjectSetInteger(0, objName, OBJPROP_RAY, false);
+            ObjectSetInteger(0, objName, OBJPROP_BACK, true);
+         }
+         else
+         {
+            ObjectMove(0, objName, 0, times[i+1], middleBand[i+1]);
+            ObjectMove(0, objName, 1, times[i], middleBand[i]);
+         }
+      }
+      
+      // Draw or update lower band segments
+      for(int i = 0; i < barsToShow - 1; i++)
+      {
+         string objName = "KC_L" + IntegerToString(i);
+         if(ObjectFind(0, objName) < 0)
+         {
+            ObjectCreate(0, objName, OBJ_TREND, 0, times[i+1], lowerBand[i+1], times[i], lowerBand[i]);
+            ObjectSetInteger(0, objName, OBJPROP_COLOR, KeltnerLowerColor);
+            ObjectSetInteger(0, objName, OBJPROP_STYLE, STYLE_SOLID);
+            ObjectSetInteger(0, objName, OBJPROP_WIDTH, 2);
+            ObjectSetInteger(0, objName, OBJPROP_RAY, false);
+            ObjectSetInteger(0, objName, OBJPROP_BACK, true);
+         }
+         else
+         {
+            ObjectMove(0, objName, 0, times[i+1], lowerBand[i+1]);
+            ObjectMove(0, objName, 1, times[i], lowerBand[i]);
+         }
+      }
    }
    
-   // Draw upper band as trend line segments
-   for(int i = 0; i < barsToShow - 1; i++)
-   {
-      string objName = "KC_U" + IntegerToString(i);
-      ObjectDelete(0, objName);
-      ObjectCreate(0, objName, OBJ_TREND, 0, times[i+1], upperBand[i+1], times[i], upperBand[i]);
-      ObjectSetInteger(0, objName, OBJPROP_COLOR, KeltnerUpperColor);
-      ObjectSetInteger(0, objName, OBJPROP_STYLE, STYLE_SOLID);
-      ObjectSetInteger(0, objName, OBJPROP_WIDTH, 2);
-      ObjectSetInteger(0, objName, OBJPROP_RAY, false);
-      ObjectSetInteger(0, objName, OBJPROP_BACK, true);
-   }
-   
-   // Draw middle band
-   for(int i = 0; i < barsToShow - 1; i++)
-   {
-      string objName = "KC_M" + IntegerToString(i);
-      ObjectDelete(0, objName);
-      ObjectCreate(0, objName, OBJ_TREND, 0, times[i+1], middleBand[i+1], times[i], middleBand[i]);
-      ObjectSetInteger(0, objName, OBJPROP_COLOR, KeltnerMiddleColor);
-      ObjectSetInteger(0, objName, OBJPROP_STYLE, STYLE_DOT);
-      ObjectSetInteger(0, objName, OBJPROP_WIDTH, 1);
-      ObjectSetInteger(0, objName, OBJPROP_RAY, false);
-      ObjectSetInteger(0, objName, OBJPROP_BACK, true);
-   }
-   
-   // Draw lower band
-   for(int i = 0; i < barsToShow - 1; i++)
-   {
-      string objName = "KC_L" + IntegerToString(i);
-      ObjectDelete(0, objName);
-      ObjectCreate(0, objName, OBJ_TREND, 0, times[i+1], lowerBand[i+1], times[i], lowerBand[i]);
-      ObjectSetInteger(0, objName, OBJPROP_COLOR, KeltnerLowerColor);
-      ObjectSetInteger(0, objName, OBJPROP_STYLE, STYLE_SOLID);
-      ObjectSetInteger(0, objName, OBJPROP_WIDTH, 2);
-      ObjectSetInteger(0, objName, OBJPROP_RAY, false);
-      ObjectSetInteger(0, objName, OBJPROP_BACK, true);
-   }
-   
-   // Draw current price level indicator
+   // Always update current price level indicator (lightweight operation)
    double currentBid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
    string priceLabel = "KC_PriceLevel";
-   ObjectDelete(0, priceLabel);
-   ObjectCreate(0, priceLabel, OBJ_HLINE, 0, 0, currentBid);
-   ObjectSetInteger(0, priceLabel, OBJPROP_COLOR, clrGray);
-   ObjectSetInteger(0, priceLabel, OBJPROP_STYLE, STYLE_DOT);
-   ObjectSetInteger(0, priceLabel, OBJPROP_WIDTH, 1);
-   ObjectSetInteger(0, priceLabel, OBJPROP_BACK, true);
+   if(ObjectFind(0, priceLabel) < 0)
+   {
+      ObjectCreate(0, priceLabel, OBJ_HLINE, 0, 0, currentBid);
+      ObjectSetInteger(0, priceLabel, OBJPROP_COLOR, clrGray);
+      ObjectSetInteger(0, priceLabel, OBJPROP_STYLE, STYLE_DOT);
+      ObjectSetInteger(0, priceLabel, OBJPROP_WIDTH, 1);
+      ObjectSetInteger(0, priceLabel, OBJPROP_BACK, true);
+   }
+   else
+   {
+      ObjectSetDouble(0, priceLabel, OBJPROP_PRICE, currentBid);
+   }
    
    ChartRedraw();
 }
@@ -726,8 +756,8 @@ void DrawTradeArrow(bool isBuy, double price, datetime time)
 {
    if(!ShowTradeArrows) return;
    
-   static int arrowCount = 0;
-   string arrowName = "SG_Arrow" + IntegerToString(arrowCount++);
+   // Use timestamp-based naming to avoid unbounded counter growth
+   string arrowName = "SG_Arrow_" + IntegerToString((long)time);
    
    ObjectCreate(0, arrowName, OBJ_ARROW, 0, time, price);
    ObjectSetInteger(0, arrowName, OBJPROP_ARROWCODE, isBuy ? 233 : 234); // Up/Down arrows
@@ -930,7 +960,8 @@ void ManageTrades()
    {
       // Move SL to breakeven with buffer
       double point = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
-      double bufferInPrice = BreakevenBuffer * point * 10; // Convert pips to price
+      // Convert pips to price: 1 pip = 10 points for 5-digit brokers
+      double bufferInPrice = BreakevenBuffer * point * PIPS_TO_POINTS;
       
       double newSL;
       if(type == POSITION_TYPE_BUY)
@@ -990,6 +1021,9 @@ void ManageTrades()
 
 //+------------------------------------------------------------------+
 //| Helper Functions                                                  |
+//| Note: These functions return pre-computed global buffer values    |
+//| for the current symbol and timeframe. Parameters are retained     |
+//| for API compatibility but not used.                               |
 //+------------------------------------------------------------------+
 double GetTrendVelocity()
 {
@@ -998,17 +1032,24 @@ double GetTrendVelocity()
    return priceChange / timeInterval;
 }
 
-double GetATR(string symbol, ENUM_TIMEFRAMES tf, int period)
+// Returns current ATR value from global buffer
+double GetATR()
 {
    return atrValue;
 }
 
-double GetMA(string symbol, ENUM_TIMEFRAMES tf, int period, int shift, ENUM_MA_METHOD method, int applied_price)
+// Returns MA value from global buffer at specified shift
+double GetMA(int shift)
 {
-   return maBuffer[shift];
+   if(shift >= 0 && shift < ArraySize(maBuffer))
+      return maBuffer[shift];
+   return 0;
 }
 
-double GetClose(string symbol, ENUM_TIMEFRAMES tf, int shift)
+// Returns close price from global buffer at specified shift
+double GetClose(int shift)
 {
-   return closeBuffer[shift];
+   if(shift >= 0 && shift < ArraySize(closeBuffer))
+      return closeBuffer[shift];
+   return 0;
 }

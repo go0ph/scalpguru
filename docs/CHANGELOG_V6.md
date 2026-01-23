@@ -112,6 +112,7 @@ input color PanelProfitColor = clrLime;           // Profit display
 input color PanelLossColor = clrRed;              // Loss display
 input color BuyArrowColor = clrLime;              // Buy arrows
 input color SellArrowColor = clrRed;              // Sell arrows
+input int KeltnerBarsToShow = 100;                // Channel history bars
 ```
 
 ### 5. Organized Input Parameters
@@ -138,6 +139,7 @@ Parameters are now grouped for easier navigation:
 | RSI_Oversold | int | 35 | RSI level for oversold |
 | RSI_Overbought | int | 65 | RSI level for overbought |
 | EnableVolumeFilter | bool | false | Enable volume filter |
+| KeltnerBarsToShow | int | 100 | Number of bars for channel display |
 | VolumeMultiplier | double | 1.2 | Volume threshold multiplier |
 | EnableSessionFilter | bool | false | Enable session filter |
 | SessionStartHour | int | 8 | Trading session start |
