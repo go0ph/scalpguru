@@ -1,7 +1,7 @@
 #property strict
-#property description "ScalpGuru V4 - Keltner Channel Mean Reversion Strategy"
-#property description "Trades reversions from Keltner Channel extremes"
-#property version   "4.00"
+#property description "ScalpGuru V5 - Keltner Channel Mean Reversion Strategy"
+#property description "Simplified strategy with trailing stop at 1:1 RR"
+#property version   "5.00"
 #property copyright "Created by go0ph"
 
 //+------------------------------------------------------------------+
@@ -25,7 +25,7 @@ input int ATRPeriod = 20;                   // ATR period
 input int KeltnerPeriod = 20;               // Keltner Channel EMA period
 input double KeltnerMultiplier = 2.5;       // Keltner ATR multiplier
 input double SL_ATRMultiplier = 1.4;        // Initial SL ATR multiplier
-input double PartialClosePercent = 100;    // Partial close % at 1:1 RR
+input double TrailingStop_ATRMultiplier = 1.0;  // Trailing stop distance (ATR multiplier)
 
 //--- Day Filtering
 input bool EnableDaySkip = true;           // Enable/disable day skipping
@@ -60,7 +60,7 @@ int atrHandle, maHandle;
 double atrBuffer[], maBuffer[], closeBuffer[];
 int tradesToday = 0;
 datetime lastTradeDay = 0;
-bool partialClosed = false;  // Track partial close state globally
+bool trailingActive = false;  // Track if trailing stop is active
 //--- Include Libraries
 #include <Trade\Trade.mqh>
 CTrade trade;
@@ -100,9 +100,9 @@ int OnInit()
       IndicatorRelease(maHandle);
       return INIT_PARAMETERS_INCORRECT;
    }
-   if(SL_ATRMultiplier <= 0 || KeltnerMultiplier <= 0)
+   if(SL_ATRMultiplier <= 0 || KeltnerMultiplier <= 0 || TrailingStop_ATRMultiplier <= 0)
    {
-      Print("[ERROR] Invalid multipliers. SL_ATRMultiplier and KeltnerMultiplier must be > 0");
+      Print("[ERROR] Invalid multipliers. SL_ATRMultiplier, KeltnerMultiplier, and TrailingStop_ATRMultiplier must be > 0");
       IndicatorRelease(atrHandle);
       IndicatorRelease(maHandle);
       return INIT_PARAMETERS_INCORRECT;
@@ -148,10 +148,11 @@ int OnInit()
    dt.hour = 0; dt.min = 0; dt.sec = 0;
    lastTradeDay = StructToTime(dt);
    
-   Print("[INIT] Scalp Guru V4 Started");
+   Print("[INIT] Scalp Guru V5 Started");
    Print("[INIT] Timeframe: ", EnumToString(timeframe));
    Print("[INIT] ATR Period: ", ATRPeriod, ", Keltner Period: ", KeltnerPeriod);
    Print("[INIT] Keltner Multiplier: ", KeltnerMultiplier, ", SL ATR Multiplier: ", SL_ATRMultiplier);
+   Print("[INIT] Trailing Stop ATR Multiplier: ", TrailingStop_ATRMultiplier);
    Print("[INIT] Risk Per Trade: ", EnableRiskPerTrade ? "Enabled" : "Disabled", ", Manual Lot Size: ", DoubleToString(ManualLotSize, 3));
    Print("[INIT] Allow Buys: ", AllowBuyTrades, ", Allow Sells: ", AllowSellTrades);
    Print("[INIT] Max Trades Per Day: ", MaxTradesPerDay);
@@ -460,7 +461,7 @@ void OpenBuyTrade()
    {
       inTrade = true;
       tradesToday++;
-      partialClosed = false;
+      trailingActive = false;
       Print("[TRADE] Buy opened: Price=", DoubleToString(price, _Digits), 
             ", Lots=", DoubleToString(lotSize, 2), 
             ", SL=", DoubleToString(sl, _Digits), 
@@ -498,7 +499,7 @@ void OpenSellTrade()
    {
       inTrade = true;
       tradesToday++;
-      partialClosed = false;
+      trailingActive = false;
       Print("[TRADE] Sell opened: Price=", DoubleToString(price, _Digits), 
             ", Lots=", DoubleToString(lotSize, 2), 
             ", SL=", DoubleToString(sl, _Digits), 
@@ -572,14 +573,14 @@ void ManageTrades()
    if (posTicket == 0)
    {
       inTrade = false;
-      partialClosed = false;
+      trailingActive = false;
       return;
    }
    
    if (!PositionSelectByTicket(posTicket))
    {
       inTrade = false;
-      partialClosed = false;
+      trailingActive = false;
       return;
    }
    
@@ -587,10 +588,8 @@ void ManageTrades()
    double entry = PositionGetDouble(POSITION_PRICE_OPEN);
    double currentSL = PositionGetDouble(POSITION_SL);
    double currentPrice = (type == POSITION_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_BID) : SymbolInfoDouble(_Symbol, SYMBOL_ASK);
-   double volume = PositionGetDouble(POSITION_VOLUME);
    double riskDistance = MathAbs(entry - currentSL);
    double rr1Price = (type == POSITION_TYPE_BUY) ? entry + riskDistance : entry - riskDistance;
-   double rr2Price = (type == POSITION_TYPE_BUY) ? entry + 2 * riskDistance : entry - 2 * riskDistance;
    
    // Max loss protection
    double floating = PositionGetDouble(POSITION_PROFIT);
@@ -600,51 +599,58 @@ void ManageTrades()
       if(trade.PositionClose(posTicket))
       {
          inTrade = false;
-         partialClosed = false;
+         trailingActive = false;
          Print("[TRADE] Closed: Loss protection triggered, Loss: ", DoubleToString(floating, 2));
       }
       return;
    }
    
-   // Partial close at 1:1 RR
-   if (!partialClosed && ((type == POSITION_TYPE_BUY && currentPrice >= rr1Price) || 
-                          (type == POSITION_TYPE_SELL && currentPrice <= rr1Price)))
+   // Activate trailing stop at 1:1 RR
+   if (!trailingActive && ((type == POSITION_TYPE_BUY && currentPrice >= rr1Price) || 
+                           (type == POSITION_TYPE_SELL && currentPrice <= rr1Price)))
    {
-      double partialVol = NormalizeDouble(volume * (PartialClosePercent / 100.0), 2);
-      
-      if (partialVol < SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN))
+      // Move SL to breakeven
+      double newSL = NormalizeDouble(entry, _Digits);
+      if(trade.PositionModify(posTicket, newSL, 0))
       {
-         Print("[WARNING] Partial close volume too small, closing entire position");
-         if(trade.PositionClose(posTicket))
-         {
-            inTrade = false;
-            partialClosed = false;
-            Print("[TRADE] Full close at 1:1 RR (volume too small for partial)");
-         }
-         return;
-      }
-      
-      if (trade.PositionClosePartial(posTicket, partialVol))
-      {
-         // Move SL to breakeven
-         double newSL = NormalizeDouble(entry, _Digits);
-         if(trade.PositionModify(posTicket, newSL, 0))
-         {
-            partialClosed = true;
-            Print("[TRADE] Partial close ", PartialClosePercent, "% at 1:1 RR, SL to BE: ", DoubleToString(entry, _Digits));
-         }
+         trailingActive = true;
+         Print("[TRADE] 1:1 RR reached! SL moved to breakeven. Trailing stop activated.");
       }
    }
    
-   // Full close at 2:1 RR
-   if (partialClosed && ((type == POSITION_TYPE_BUY && currentPrice >= rr2Price) || 
-                          (type == POSITION_TYPE_SELL && currentPrice <= rr2Price)))
+   // Apply trailing stop logic
+   if (trailingActive)
    {
-      if(trade.PositionClose(posTicket))
+      double trailingDistance = TrailingStop_ATRMultiplier * atrValue;
+      double newSL = 0;
+      
+      if (type == POSITION_TYPE_BUY)
       {
-         inTrade = false;
-         partialClosed = false;
-         Print("[TRADE] Full close at 2:1 RR");
+         // For buy trades, trail stop below current price
+         newSL = NormalizeDouble(currentPrice - trailingDistance, _Digits);
+         
+         // Only move stop loss up, never down
+         if (newSL > currentSL)
+         {
+            if(trade.PositionModify(posTicket, newSL, 0))
+            {
+               Print("[TRADE] Trailing stop updated: New SL = ", DoubleToString(newSL, _Digits));
+            }
+         }
+      }
+      else if (type == POSITION_TYPE_SELL)
+      {
+         // For sell trades, trail stop above current price
+         newSL = NormalizeDouble(currentPrice + trailingDistance, _Digits);
+         
+         // Only move stop loss down, never up
+         if (newSL < currentSL)
+         {
+            if(trade.PositionModify(posTicket, newSL, 0))
+            {
+               Print("[TRADE] Trailing stop updated: New SL = ", DoubleToString(newSL, _Digits));
+            }
+         }
       }
    }
    
