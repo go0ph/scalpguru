@@ -46,9 +46,9 @@ This analysis compares V6 and V7 backtest results to evaluate performance tradeo
 | V6 | $1,960.93 | $163.41 | $7.84 | ~10.7 weeks | **2.7 months** |
 | V7 | $1,430.08 | $119.17 | $5.72 | ~14.6 weeks | **3.7 months** |
 
-### Reaching $2,000 Target
+### Reaching $2,000 Profit Target
 
-The user mentioned wanting to reach $2,000 total profit (beyond the initial $600 challenge target, for continued trading on the funded account).
+For traders who want to accumulate $2,000 total profit (beyond the initial $600 challenge target, for continued trading on the funded account):
 
 | Version | Time to $2,000 |
 |---------|----------------|

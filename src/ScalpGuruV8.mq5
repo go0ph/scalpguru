@@ -674,6 +674,13 @@ bool CheckStochasticFilter(bool isBuy)
 {
    if(!EnableStochasticFilter) return true;
    
+   // Safety check: ensure handle was initialized
+   if(stochHandle == INVALID_HANDLE)
+   {
+      Print("[WARNING] Stochastic handle not initialized, allowing trade");
+      return true;
+   }
+   
    // Get Stochastic values
    if(CopyBuffer(stochHandle, 0, 0, 3, stochKBuffer) <= 0 ||
       CopyBuffer(stochHandle, 1, 0, 3, stochDBuffer) <= 0)
@@ -731,6 +738,13 @@ bool CheckTrendFilter(bool isBuy)
    
    // Trend filter only applies to sells
    if(isBuy) return true;
+   
+   // Safety check: ensure handle was initialized
+   if(trendEmaHandle == INVALID_HANDLE)
+   {
+      Print("[WARNING] Trend EMA handle not initialized, allowing trade");
+      return true;
+   }
    
    // Get H1 EMA for trend direction
    if(CopyBuffer(trendEmaHandle, 0, 0, 1, trendEmaBuffer) <= 0)

@@ -1,8 +1,8 @@
-# ScalpGuru V7 - 3-Month Funded Account Pass Guide
+# ScalpGuru V8 - 3-Month Funded Account Pass Guide
 
 ## 🎯 Objective: Pass $6,000 FundedNext Stellar 1-Step in 3 Months
 
-This guide provides optimized settings to realistically pass the funded account challenge in approximately **3 months** while staying within risk limits.
+This guide provides optimized settings to realistically pass the funded account challenge in approximately **3 months** while staying within risk limits. **V8 uses these settings by default.**
 
 ## ⚠️ Important Disclaimers
 
@@ -47,11 +47,12 @@ EnablePartialProfit = true     // Keep partial profit taking
 ### Full Settings File (Copy/Paste Ready):
 
 ```ini
-; ScalpGuru V7 - Aggressive 3-Month Preset
+; ScalpGuru V8 - Default Aggressive Settings
 ; For FundedNext Stellar 1-Step $6K Challenge
+; (Can also be used with V7 by changing MagicNumber to 15137)
 
 [Trading Configuration]
-MagicNumber=15137
+MagicNumber=15138
 AllowSellTrades=false
 AllowBuyTrades=true
 AccountBalance=6000.0
