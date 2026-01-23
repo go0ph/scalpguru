@@ -100,9 +100,9 @@ int OnInit()
       IndicatorRelease(maHandle);
       return INIT_PARAMETERS_INCORRECT;
    }
-   if(SL_ATRMultiplier <= 0 || KeltnerMultiplier <= 0)
+   if(SL_ATRMultiplier <= 0 || KeltnerMultiplier <= 0 || TrailingStop_ATRMultiplier <= 0)
    {
-      Print("[ERROR] Invalid multipliers. SL_ATRMultiplier and KeltnerMultiplier must be > 0");
+      Print("[ERROR] Invalid multipliers. SL_ATRMultiplier, KeltnerMultiplier, and TrailingStop_ATRMultiplier must be > 0");
       IndicatorRelease(atrHandle);
       IndicatorRelease(maHandle);
       return INIT_PARAMETERS_INCORRECT;

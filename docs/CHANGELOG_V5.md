@@ -27,24 +27,24 @@
 
 ### Code Simplifications
 
-#### 2. Removed Unused Complexity
-- **Removed Functions:**
-  - `CalculateTradeProgress()` - Progress logging
-  - `CountOpenPositions()` - Redundant position counting
-  - `GetTrendVelocity()` - Unused prediction function
-  - `GetATR()`, `GetMA()`, `GetClose()` - Unused wrappers
-  - `iKeltnerUpper()`, `iKeltnerLower()` - Unused wrappers
+#### 2. Legacy Code Retained for Compatibility
+While V5 focuses on the new trailing stop mechanism, some helper functions from V4 have been retained for potential future use or debugging:
+- `CalculateTradeProgress()` - Progress logging (currently unused)
+- `CountOpenPositions()` - Position counting (may be useful for multi-symbol setups)
+- `GetTrendVelocity()`, `GetATR()`, `GetMA()`, `GetClose()` - Indicator wrappers
 
-- **Simplified Logic:**
-  - Removed `predictedPrice` variable (was always equal to `currentPrice`)
-  - Streamlined entry condition checks
-  - Cleaner trade management flow
+**Note:** These functions don't impact performance and may be removed in future versions if confirmed unnecessary.
 
-#### 3. Code Quality Improvements
-- More readable and maintainable code
-- Reduced lines of code by ~200 lines
-- Clearer function purposes
-- Better comments and structure
+#### 3. Simplified Logic
+- Entry condition checks remain clean and straightforward
+- Streamlined trade management flow focused on trailing stop
+- Better comments and structure in ManageTrades() function
+
+#### 4. Code Quality Improvements
+- Added validation for new `TrailingStop_ATRMultiplier` parameter
+- More readable trailing stop implementation
+- Clearer variable names (`trailingActive` vs `partialClosed`)
+- Better log messages for trade management events
 
 ## New Parameter
 
