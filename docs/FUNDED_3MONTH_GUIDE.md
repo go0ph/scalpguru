@@ -110,12 +110,12 @@ SkipFriday=true
 
 ### Daily Loss Scenarios
 
-| Scenario | Risk | Outcome |
-|----------|------|---------|
-| Best case (3 wins) | 0% loss | +$60 to +$90 profit |
-| Mixed (2 wins, 1 loss) | ~1% loss | +$20 to +$50 profit |
-| Bad day (1 win, 2 losses) | ~2% loss | -$30 to -$60 loss |
-| Worst case (3 losses) | 3% loss | -$180 loss (hits daily limit) |
+| Scenario | Daily P/L | Outcome |
+|----------|-----------|---------|
+| Best case (3 wins) | +3% gain | +$60 to +$90 profit |
+| Mixed (2 wins, 1 loss) | +1% gain | +$20 to +$50 profit |
+| Bad day (1 win, 2 losses) | -1% loss | -$30 to -$60 loss |
+| Worst case (3 losses) | -3% loss | -$180 loss (hits daily limit) |
 
 ### Weekly Expectations
 

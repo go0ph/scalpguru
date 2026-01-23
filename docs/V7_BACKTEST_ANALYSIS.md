@@ -4,7 +4,7 @@
 
 This analysis compares V6 and V7 backtest results to evaluate performance tradeoffs and calculate funded account pass timelines.
 
-## Backtest Data (Jan 2025 - Dec 2025, XAUUSD M15)
+## Backtest Data (12-Month Historical, XAUUSD M15)
 
 ### Side-by-Side Comparison
 
@@ -46,7 +46,9 @@ This analysis compares V6 and V7 backtest results to evaluate performance tradeo
 | V6 | $1,960.93 | $163.41 | $7.84 | ~10.7 weeks | **2.7 months** |
 | V7 | $1,430.08 | $119.17 | $5.72 | ~14.6 weeks | **3.7 months** |
 
-### Reaching $2,000 Target (User Goal)
+### Reaching $2,000 Target
+
+The user mentioned wanting to reach $2,000 total profit (beyond the initial $600 challenge target, for continued trading on the funded account).
 
 | Version | Time to $2,000 |
 |---------|----------------|
@@ -175,5 +177,5 @@ The funded account protection in V7 should prevent hitting the actual limits dur
 ---
 
 *Analysis Date: January 2026*
-*Backtest Period: January 2025 - December 2025*
+*Backtest Period: January 2024 - December 2024 (12 months historical data)*
 *Symbol: XAUUSD M15*
