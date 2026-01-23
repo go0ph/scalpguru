@@ -172,6 +172,68 @@ IndicatorRelease(maHandle);
 Print("EA Deinitialized, Reason: ", reason);
 }
 //+------------------------------------------------------------------+
+//| Calculate Trade Progress Percentage                                |
+//+------------------------------------------------------------------+
+double CalculateTradeProgress()
+{
+double currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+double predictedPrice = currentPrice + (GetTrendVelocity() * 0.0);
+double progress = 0.0;
+// Buy trade progress: 0% at keltnerMid, 99% when close2 < keltnerLower, 100% when trade triggered
+if (AllowBuyTrades && predictedPrice <= keltnerMid)
+{
+double distanceToLower = MathMax(keltnerMid - predictedPrice, 0);
+double totalDistance = MathMax(keltnerMid - keltnerLower, 0.01);
+if (totalDistance > 0)
+{
+progress = MathMin((distanceToLower / totalDistance) * 90.0, 90.0); // Scale to 90% max
+if (closeBuffer[2] < keltnerLower)
+{
+progress = MathMin(progress + 9.0, 99.0); // Add 9% when close2 < keltnerLower
+if (predictedPrice > keltnerLower)
+{
+progress = 100.0; // Trade triggered
+}
+}
+}
+}
+// Sell trade progress: 0% at keltnerMid, 99% when close2 > keltnerUpper, 100% when trade triggered
+if (AllowSellTrades && predictedPrice >= keltnerMid)
+{
+double distanceToUpper = MathMax(predictedPrice - keltnerMid, 0);
+double totalDistance = MathMax(keltnerUpper - keltnerMid, 0.01);
+if (totalDistance > 0)
+{
+progress = MathMin((distanceToUpper / totalDistance) * 90.0, 90.0); // Scale to 90% max
+if (closeBuffer[2] > keltnerUpper)
+{
+progress = MathMin(progress + 9.0, 99.0); // Add 9% when close2 > keltnerUpper
+if (predictedPrice < keltnerUpper)
+{
+progress = 100.0; // Trade triggered
+}
+}
+}
+}
+return progress;
+}
+//+------------------------------------------------------------------+
+//| Count open positions for this EA                                  |
+//+------------------------------------------------------------------+
+int CountOpenPositions()
+{
+int count = 0;
+for (int i = PositionsTotal() - 1; i >= 0; i--)
+{
+ulong ticket = PositionGetTicket(i);
+if (ticket > 0 && PositionGetString(POSITION_SYMBOL) == _Symbol && PositionGetInteger(POSITION_MAGIC) == MagicNumber)
+{
+count++;
+}
+}
+return count;
+}
+//+------------------------------------------------------------------+
 //| Expert tick function                                              |
 //+------------------------------------------------------------------+
 void OnTick()
@@ -252,6 +314,7 @@ Print("[ERROR] Failed to update indicators: ", GetLastError());
 return;
 }
 atrValue = atrBuffer[0];
+double predictedPrice = 0;
 double close2 = closeBuffer[2];
 if (!isSkipped)
 {
@@ -264,7 +327,9 @@ double ema = maBuffer[0];
 keltnerUpper = MathMax(ema + KeltnerMultiplier * atrValue, 0);
 keltnerLower = MathMax(ema - KeltnerMultiplier * atrValue, 0);
 keltnerMid = ema;
-double currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+double close1 = closeBuffer[1];
+double currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_ASK); // For entry prediction
+predictedPrice = currentPrice + (GetTrendVelocity() * 0.0);
 // Manage Keltner Channel display
 if (ShowKeltnerOnChart)
 {
@@ -277,15 +342,26 @@ ObjectDelete(0, "KeltnerMiddle");
 ObjectDelete(0, "KeltnerLower");
 ChartRedraw();
 }
-
-// Check for entry signals if not in trade
+static datetime lastProgressLog = 0;
+if (!inTrade && (serverTime - lastProgressLog >= 60))
+{
+double progress = CalculateTradeProgress();
+if (progress > 0.0 && progress < 100.0) // Only print if progress is 0-99.9%
+{
+string tradeType = (predictedPrice <= keltnerMid) ? "Buy" : "Sell";
+Print(StringFormat("Trade Progress: %s trade countdown %.1f%% to entry", tradeType, progress));
+lastProgressLog = serverTime;
+}
+}
+int openPositions = CountOpenPositions();
+// FIX: Changed openPositions == 0 to !inTrade to prevent duplication due to async position updates
 if (!inTrade && (!EnableMaxTradesPerDay || tradesToday < MaxTradesPerDay))
 {
-if (AllowBuyTrades && close2 < keltnerLower && currentPrice > keltnerLower)
+if (AllowBuyTrades && close2 < keltnerLower && predictedPrice > keltnerLower) // Adjusted for entry
 {
 OpenBuyTrade();
 }
-else if (AllowSellTrades && close2 > keltnerUpper && currentPrice < keltnerUpper)
+else if (AllowSellTrades && close2 > keltnerUpper && predictedPrice < keltnerUpper)
 {
 OpenSellTrade();
 }
@@ -345,3 +421,259 @@ ObjectSetInteger(0, "KeltnerLower", OBJPROP_RAY, true); // Extend to the right
 ChartRedraw();
 }
 //+------------------------------------------------------------------+
+//| Calculate Keltner Upper Band                                      |
+//+------------------------------------------------------------------+
+double iKeltnerUpper()
+{
+return keltnerUpper;
+}
+//+------------------------------------------------------------------+
+//| Calculate Keltner Lower Band                                      |
+//+------------------------------------------------------------------+
+double iKeltnerLower()
+{
+return keltnerLower;
+}
+//+------------------------------------------------------------------+
+//| Open Buy Trade                                                    |
+//+------------------------------------------------------------------+
+void OpenBuyTrade()
+{
+   double price = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+   double lotSize = CalculateLotSize(price);
+   double sl = NormalizeDouble(price - SL_ATRMultiplier * atrValue, _Digits);
+   double takeProfit = 0;
+   double margin;
+   
+   if(!OrderCalcMargin(ORDER_TYPE_BUY, _Symbol, lotSize, price, margin))
+   {
+      Print("[ERROR] Failed to calculate margin for Buy trade: ", GetLastError());
+      return;
+   }
+   
+   if(AccountInfoDouble(ACCOUNT_MARGIN_FREE) < margin)
+   {
+      Print("[ERROR] Insufficient margin for Buy trade. Required: ", margin, ", Available: ", AccountInfoDouble(ACCOUNT_MARGIN_FREE));
+      return;
+   }
+   
+   if (trade.Buy(lotSize, _Symbol, price, sl, takeProfit, "ScalpGuru Buy"))
+   {
+      inTrade = true;
+      tradesToday++;
+      trailingActive = false;
+      Print("[TRADE] Buy opened: Price=", DoubleToString(price, _Digits), 
+            ", Lots=", DoubleToString(lotSize, 2), 
+            ", SL=", DoubleToString(sl, _Digits), 
+            ", Trades today: ", tradesToday);
+   }
+   else
+   {
+      Print("[ERROR] Failed to open Buy trade: ", GetLastError());
+   }
+}
+//+------------------------------------------------------------------+
+//| Open Sell Trade                                                   |
+//+------------------------------------------------------------------+
+void OpenSellTrade()
+{
+   double price = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+   double lotSize = CalculateLotSize(price);
+   double sl = NormalizeDouble(price + SL_ATRMultiplier * atrValue, _Digits);
+   double takeProfit = 0;
+   double margin;
+   
+   if(!OrderCalcMargin(ORDER_TYPE_SELL, _Symbol, lotSize, price, margin))
+   {
+      Print("[ERROR] Failed to calculate margin for Sell trade: ", GetLastError());
+      return;
+   }
+   
+   if(AccountInfoDouble(ACCOUNT_MARGIN_FREE) < margin)
+   {
+      Print("[ERROR] Insufficient margin for Sell trade. Required: ", margin, ", Available: ", AccountInfoDouble(ACCOUNT_MARGIN_FREE));
+      return;
+   }
+   
+   if (trade.Sell(lotSize, _Symbol, price, sl, takeProfit, "ScalpGuru Sell"))
+   {
+      inTrade = true;
+      tradesToday++;
+      trailingActive = false;
+      Print("[TRADE] Sell opened: Price=", DoubleToString(price, _Digits), 
+            ", Lots=", DoubleToString(lotSize, 2), 
+            ", SL=", DoubleToString(sl, _Digits), 
+            ", Trades today: ", tradesToday);
+   }
+   else
+   {
+      Print("[ERROR] Failed to open Sell trade: ", GetLastError());
+   }
+}
+//+------------------------------------------------------------------+
+//| Calculate Lot Size                                                |
+//+------------------------------------------------------------------+
+double CalculateLotSize(double price)
+{
+   if (EnableRiskPerTrade)
+   {
+      double riskAmount = AccountBalance * (RiskPerTradePercent / 100.0);
+      double slDistance = SL_ATRMultiplier * atrValue;
+      double tickSize = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
+      double tickValue = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_VALUE);
+      
+      if(tickSize == 0 || tickValue == 0)
+      {
+         Print("[ERROR] Invalid tick size or tick value");
+         return NormalizeDouble(ManualLotSize, 2);
+      }
+      
+      double slPoints = slDistance / tickSize;
+      double lotSize = NormalizeDouble(riskAmount / (slPoints * tickValue), 2);
+      
+      double minLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
+      if (lotSize < minLot)
+      {
+         Print("[WARNING] Calculated lot size (", lotSize, ") below minimum (", minLot, "). Using minimum.");
+         lotSize = minLot;
+      }
+      
+      double maxLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX);
+      if (lotSize > maxLot)
+      {
+         Print("[WARNING] Calculated lot size (", lotSize, ") above maximum (", maxLot, "). Using maximum.");
+         lotSize = maxLot;
+      }
+      
+      return lotSize;
+   }
+   else
+   {
+      return NormalizeDouble(ManualLotSize, 2);
+   }
+}
+//+------------------------------------------------------------------+
+//| Manage Open Trades                                                |
+//+------------------------------------------------------------------+
+void ManageTrades()
+{
+   ulong posTicket = 0;
+   
+   // Find position for this symbol and magic number
+   for (int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if (ticket > 0 && PositionGetString(POSITION_SYMBOL) == _Symbol && PositionGetInteger(POSITION_MAGIC) == MagicNumber)
+      {
+         posTicket = ticket;
+         break;
+      }
+   }
+   
+   if (posTicket == 0)
+   {
+      inTrade = false;
+      trailingActive = false;
+      return;
+   }
+   
+   if (!PositionSelectByTicket(posTicket))
+   {
+      inTrade = false;
+      trailingActive = false;
+      return;
+   }
+   
+   ENUM_POSITION_TYPE type = (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
+   double entry = PositionGetDouble(POSITION_PRICE_OPEN);
+   double currentSL = PositionGetDouble(POSITION_SL);
+   double currentPrice = (type == POSITION_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_BID) : SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+   double riskDistance = MathAbs(entry - currentSL);
+   double rr1Price = (type == POSITION_TYPE_BUY) ? entry + riskDistance : entry - riskDistance;
+   
+   // Max loss protection
+   double floating = PositionGetDouble(POSITION_PROFIT);
+   double threshold = -MaxLossPercent / 100.0 * AccountBalance;
+   if (floating < threshold)
+   {
+      if(trade.PositionClose(posTicket))
+      {
+         inTrade = false;
+         trailingActive = false;
+         Print("[TRADE] Closed: Loss protection triggered, Loss: ", DoubleToString(floating, 2));
+      }
+      return;
+   }
+   
+   // Activate trailing stop at 1:1 RR
+   if (!trailingActive && ((type == POSITION_TYPE_BUY && currentPrice >= rr1Price) || 
+                           (type == POSITION_TYPE_SELL && currentPrice <= rr1Price)))
+   {
+      // Move SL to breakeven
+      double newSL = NormalizeDouble(entry, _Digits);
+      if(trade.PositionModify(posTicket, newSL, 0))
+      {
+         trailingActive = true;
+         Print("[TRADE] 1:1 RR reached! SL moved to breakeven. Trailing stop activated.");
+      }
+   }
+   
+   // Apply trailing stop logic
+   if (trailingActive)
+   {
+      double trailingDistance = TrailingStop_ATRMultiplier * atrValue;
+      double newSL = 0;
+      
+      if (type == POSITION_TYPE_BUY)
+      {
+         // For buy trades, trail stop below current price
+         newSL = NormalizeDouble(currentPrice - trailingDistance, _Digits);
+         
+         // Only move stop loss up, never down
+         if (newSL > currentSL)
+         {
+            if(trade.PositionModify(posTicket, newSL, 0))
+            {
+               Print("[TRADE] Trailing stop updated: New SL = ", DoubleToString(newSL, _Digits));
+            }
+         }
+      }
+      else if (type == POSITION_TYPE_SELL)
+      {
+         // For sell trades, trail stop above current price
+         newSL = NormalizeDouble(currentPrice + trailingDistance, _Digits);
+         
+         // Only move stop loss down, never up
+         if (newSL < currentSL)
+         {
+            if(trade.PositionModify(posTicket, newSL, 0))
+            {
+               Print("[TRADE] Trailing stop updated: New SL = ", DoubleToString(newSL, _Digits));
+            }
+         }
+      }
+   }
+   
+   inTrade = true;
+}
+//+------------------------------------------------------------------+
+//| Custom Indicator Wrappers                                         |
+//+------------------------------------------------------------------+
+double GetTrendVelocity()
+{
+double priceChange = closeBuffer[0] - closeBuffer[1];
+double timeInterval = PeriodSeconds(timeframe) / 60.0;
+return priceChange / timeInterval;
+}
+double GetATR(string symbol, ENUM_TIMEFRAMES tf, int period)
+{
+return atrValue;
+}
+double GetMA(string symbol, ENUM_TIMEFRAMES tf, int period, int shift, ENUM_MA_METHOD method, int applied_price)
+{
+return maBuffer[shift];
+}
+double GetClose(string symbol, ENUM_TIMEFRAMES tf, int shift)
+{
+return closeBuffer[shift];
+}
