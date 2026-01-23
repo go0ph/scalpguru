@@ -218,7 +218,7 @@ int OnInit()
       }
       ArraySetAsSeries(stochKBuffer, true);
       ArraySetAsSeries(stochDBuffer, true);
-      Print("[V8] Stochastic indicator initialized for enhanced sell entries");
+      Print("[V9] Stochastic indicator initialized for enhanced sell entries");
    }
    
    // V8: Initialize Trend EMA on H1 timeframe for trend filter
@@ -235,7 +235,7 @@ int OnInit()
          return INIT_FAILED;
       }
       ArraySetAsSeries(trendEmaBuffer, true);
-      Print("[V8] Trend EMA (H1 ", TrendEMAPeriod, ") initialized for sell trend filter");
+      Print("[V9] Trend EMA (H1 ", TrendEMAPeriod, ") initialized for sell trend filter");
    }
    
    ArraySetAsSeries(atrBuffer, true);
@@ -344,7 +344,7 @@ int OnInit()
       CreateInfoPanel();
    }
    
-   Print("[INIT] ScalpGuru V8 Started - Funded Account Edition");
+   Print("[INIT] ScalpGuru V9 Started - Data-Driven Gold Trading Edition");
    Print("[INIT] Timeframe: ", EnumToString(timeframe));
    Print("[INIT] ATR Period: ", ATRPeriod, ", Keltner Period: ", KeltnerPeriod);
    Print("[INIT] Keltner Multiplier: ", KeltnerMultiplier, ", SL ATR Multiplier: ", SL_ATRMultiplier);
@@ -381,7 +381,7 @@ void OnDeinit(const int reason)
    if(EnableTrendFilter && AllowSellTrades && trendEmaHandle != INVALID_HANDLE)
       IndicatorRelease(trendEmaHandle);
    
-   Print("[DEINIT] ScalpGuru V8 Stopped, Reason: ", reason);
+   Print("[DEINIT] ScalpGuru V9 Stopped, Reason: ", reason);
 }
 
 //+------------------------------------------------------------------+
@@ -1102,7 +1102,7 @@ void OnTick()
                      
                      if(stochOk && trendOk && retestOk)
                      {
-                        Print("[V8 SELL] All filters passed - Stoch: ", stochOk, ", Trend: ", trendOk, ", Retest: ", retestOk);
+                        Print("[V9 SELL] All filters passed - Stoch: ", stochOk, ", Trend: ", trendOk, ", Retest: ", retestOk);
                         OpenSellTrade();
                      }
                   }
