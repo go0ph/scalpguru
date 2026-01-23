@@ -130,6 +130,8 @@ bool profitTargetReached = false;  // Flag when profit target is reached
 
 // Constants
 #define PIPS_TO_POINTS 10  // Multiplier to convert pips to points
+#define CANDLE_WICK_RATIO 0.6    // Wick must be >= 60% of candle range for hammer/shooting star
+#define CANDLE_BODY_RATIO 0.4    // Body must be <= 40% of candle range for hammer/shooting star
 
 //--- Include Libraries
 #include <Trade\Trade.mqh>
@@ -207,6 +209,42 @@ int OnInit()
       Print("[ERROR] Invalid RiskPerTradePercent: ", RiskPerTradePercent, ". Must be between 0 and 100");
       return INIT_PARAMETERS_INCORRECT;
    }
+   
+   // V7: Validate funded account protection parameters
+   if(EnableFundedMode)
+   {
+      if(DailyLossLimitPercent <= 0 || DailyLossLimitPercent > 100)
+      {
+         Print("[ERROR] Invalid DailyLossLimitPercent: ", DailyLossLimitPercent, ". Must be between 0 and 100");
+         return INIT_PARAMETERS_INCORRECT;
+      }
+      if(MaxDrawdownPercent <= 0 || MaxDrawdownPercent > 100)
+      {
+         Print("[ERROR] Invalid MaxDrawdownPercent: ", MaxDrawdownPercent, ". Must be between 0 and 100");
+         return INIT_PARAMETERS_INCORRECT;
+      }
+      if(ProfitTargetPercent <= 0)
+      {
+         Print("[ERROR] Invalid ProfitTargetPercent: ", ProfitTargetPercent, ". Must be > 0");
+         return INIT_PARAMETERS_INCORRECT;
+      }
+   }
+   
+   // V7: Validate partial profit parameters
+   if(EnablePartialProfit)
+   {
+      if(PartialProfitPercent <= 0 || PartialProfitPercent > 100)
+      {
+         Print("[ERROR] Invalid PartialProfitPercent: ", PartialProfitPercent, ". Must be between 0 and 100");
+         return INIT_PARAMETERS_INCORRECT;
+      }
+      if(ExtendedTrailMultiplier <= 0)
+      {
+         Print("[ERROR] Invalid ExtendedTrailMultiplier: ", ExtendedTrailMultiplier, ". Must be > 0");
+         return INIT_PARAMETERS_INCORRECT;
+      }
+   }
+   
    if(!AllowBuyTrades && !AllowSellTrades)
    {
       Print("[ERROR] Both AllowBuyTrades and AllowSellTrades are disabled. At least one must be enabled");
@@ -542,8 +580,8 @@ bool CheckCandleConfirmation(bool isBuy)
       // 2. Or hammer pattern (small body at top, long lower wick)
       bool isBullish = close1 > open1;
       bool isHammer = (candleRange > 0) && 
-                      ((close1 - low1) > 0.6 * candleRange) && 
-                      (candleBody < 0.4 * candleRange);
+                      ((close1 - low1) > CANDLE_WICK_RATIO * candleRange) && 
+                      (candleBody < CANDLE_BODY_RATIO * candleRange);
       
       // Also accept if current candle is showing bullish momentum
       double currentClose = closeBuffer[0];
@@ -559,8 +597,8 @@ bool CheckCandleConfirmation(bool isBuy)
       // 2. Or shooting star pattern (small body at bottom, long upper wick)
       bool isBearish = close1 < open1;
       bool isShootingStar = (candleRange > 0) && 
-                            ((high1 - close1) > 0.6 * candleRange) && 
-                            (candleBody < 0.4 * candleRange);
+                            ((high1 - close1) > CANDLE_WICK_RATIO * candleRange) && 
+                            (candleBody < CANDLE_BODY_RATIO * candleRange);
       
       // Also accept if current candle is showing bearish momentum
       double currentClose = closeBuffer[0];
@@ -607,13 +645,13 @@ bool CheckFundedAccountLimits()
    // Use the lower of balance or equity for drawdown calculation
    double effectiveEquity = MathMin(currentBalance, currentEquity);
    
-   // Calculate overall drawdown from challenge start
-   double overallDrawdown = overallStartBalance - effectiveEquity;
+   // Calculate overall drawdown from challenge start (ensure non-negative)
+   double overallDrawdown = MathMax(0, overallStartBalance - effectiveEquity);
    double overallDrawdownPercent = (overallDrawdown / overallStartBalance) * 100;
    double maxAllowedDrawdown = overallStartBalance * (MaxDrawdownPercent / 100);
    
-   // Check if profit target reached
-   double profit = currentBalance - overallStartBalance;
+   // Check if profit target reached (use effectiveEquity for consistency)
+   double profit = effectiveEquity - overallStartBalance;
    double targetAmount = overallStartBalance * (ProfitTargetPercent / 100);
    if(profit >= targetAmount && !profitTargetReached)
    {
