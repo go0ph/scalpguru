@@ -1,0 +1,673 @@
+#property strict
+#property description "ScalpGuru V4 - Keltner Channel Mean Reversion Strategy"
+#property description "Trades reversions from Keltner Channel extremes"
+#property version   "4.00"
+#property copyright "Created by go0ph"
+
+//+------------------------------------------------------------------+
+//| Input Parameters                                                  |
+//+------------------------------------------------------------------+
+
+//--- Trading Configuration
+input int MagicNumber = 15132;            // Magic Number
+input bool AllowSellTrades = false;         // Enable/disable sell trades
+input bool AllowBuyTrades = true;           // Enable/disable buy trades
+input double AccountBalance = 6000.0;       // Account balance for risk calculation
+input double RiskPerTradePercent = 1.0;     // Risk per trade %
+input bool EnableRiskPerTrade = true;      // Enable risk per trade
+input double ManualLotSize = 0.01;          // Manual lot size if risk per trade is disabled
+input double MaxLossPercent = 1;         // Auto-close if loss exceeds % of balance
+input int MaxTradesPerDay = 2;              // Max trades per day
+input bool EnableMaxTradesPerDay = true;    // Enable/disable max trades per day limit
+
+//--- Strategy Parameters
+input int ATRPeriod = 20;                   // ATR period
+input int KeltnerPeriod = 20;               // Keltner Channel EMA period
+input double KeltnerMultiplier = 2.5;       // Keltner ATR multiplier
+input double SL_ATRMultiplier = 1.4;        // Initial SL ATR multiplier
+input double PartialClosePercent = 100;    // Partial close % at 1:1 RR
+
+//--- Day Filtering
+input bool EnableDaySkip = true;           // Enable/disable day skipping
+input bool SkipMonday = false;              // Skip Monday (1)
+input bool SkipTuesday = false;             // Skip Tuesday (2)
+input bool SkipWednesday = false;           // Skip Wednesday (3)
+input bool SkipThursday = false;            // Skip Thursday (4)
+input bool SkipFriday = true;               // Skip Friday (5)
+
+//--- Month Filtering
+input bool EnableMonthSkip = false;         // Enable/disable month skipping
+input bool SkipJanuary = false;             // Skip January (1)
+input bool SkipFebruary = false;            // Skip February (2)
+input bool SkipMarch = false;               // Skip March (3)
+input bool SkipApril = false;               // Skip April (4)
+input bool SkipMay = false;                 // Skip May (5)
+input bool SkipJune = false;                // Skip June (6)
+input bool SkipJuly = false;                // Skip July (7)
+input bool SkipAugust = false;              // Skip August (8)
+input bool SkipSeptember = false;           // Skip September (9)
+input bool SkipOctober = false;             // Skip October (10)
+input bool SkipNovember = false;            // Skip November (11)
+input bool SkipDecember = false;            // Skip December (12)
+
+//--- Visual Settings
+input bool ShowKeltnerOnChart = true;      // Enable/disable Display on Chart
+//--- Global Variables
+double atrValue, keltnerUpper, keltnerLower, keltnerMid;
+bool inTrade = false;
+ENUM_TIMEFRAMES timeframe;
+int atrHandle, maHandle;
+double atrBuffer[], maBuffer[], closeBuffer[];
+int tradesToday = 0;
+datetime lastTradeDay = 0;
+bool partialClosed = false;  // Track partial close state globally
+//--- Include Libraries
+#include <Trade\Trade.mqh>
+CTrade trade;
+//+------------------------------------------------------------------+
+//| Expert initialization function                                     |
+//+------------------------------------------------------------------+
+int OnInit()
+{
+   timeframe = Period(); // Use chart's timeframe (e.g., M15)
+   trade.SetExpertMagicNumber(MagicNumber); // Unique identifier for trades
+   
+   // Initialize indicators with error checking
+   atrHandle = iATR(_Symbol, timeframe, ATRPeriod);
+   if(atrHandle == INVALID_HANDLE)
+   {
+      Print("[ERROR] Failed to create ATR indicator handle");
+      return INIT_FAILED;
+   }
+   
+   maHandle = iMA(_Symbol, timeframe, KeltnerPeriod, 0, MODE_EMA, PRICE_CLOSE);
+   if(maHandle == INVALID_HANDLE)
+   {
+      Print("[ERROR] Failed to create MA indicator handle");
+      IndicatorRelease(atrHandle);
+      return INIT_FAILED;
+   }
+   
+   ArraySetAsSeries(atrBuffer, true);
+   ArraySetAsSeries(maBuffer, true);
+   ArraySetAsSeries(closeBuffer, true);
+   
+   // Validate input parameters
+   if(ATRPeriod <= 0 || KeltnerPeriod <= 0)
+   {
+      Print("[ERROR] Invalid indicator periods. ATRPeriod and KeltnerPeriod must be > 0");
+      IndicatorRelease(atrHandle);
+      IndicatorRelease(maHandle);
+      return INIT_PARAMETERS_INCORRECT;
+   }
+   if(SL_ATRMultiplier <= 0 || KeltnerMultiplier <= 0)
+   {
+      Print("[ERROR] Invalid multipliers. SL_ATRMultiplier and KeltnerMultiplier must be > 0");
+      IndicatorRelease(atrHandle);
+      IndicatorRelease(maHandle);
+      return INIT_PARAMETERS_INCORRECT;
+   }
+   if(ManualLotSize <= 0)
+   {
+      Print("[ERROR] Invalid ManualLotSize: ", ManualLotSize, ". Must be > 0");
+      IndicatorRelease(atrHandle);
+      IndicatorRelease(maHandle);
+      return INIT_PARAMETERS_INCORRECT;
+   }
+   if(MaxLossPercent <= 0 || MaxLossPercent > 100)
+   {
+      Print("[ERROR] Invalid MaxLossPercent: ", MaxLossPercent, ". Must be between 0 and 100");
+      IndicatorRelease(atrHandle);
+      IndicatorRelease(maHandle);
+      return INIT_PARAMETERS_INCORRECT;
+   }
+   if(RiskPerTradePercent <= 0 || RiskPerTradePercent > 100)
+   {
+      Print("[ERROR] Invalid RiskPerTradePercent: ", RiskPerTradePercent, ". Must be between 0 and 100");
+      IndicatorRelease(atrHandle);
+      IndicatorRelease(maHandle);
+      return INIT_PARAMETERS_INCORRECT;
+   }
+   if(!AllowBuyTrades && !AllowSellTrades)
+   {
+      Print("[ERROR] Both AllowBuyTrades and AllowSellTrades are disabled. At least one must be enabled");
+      IndicatorRelease(atrHandle);
+      IndicatorRelease(maHandle);
+      return INIT_PARAMETERS_INCORRECT;
+   }
+   if(MaxTradesPerDay <= 0)
+   {
+      Print("[ERROR] Invalid MaxTradesPerDay: ", MaxTradesPerDay, ". Must be > 0");
+      IndicatorRelease(atrHandle);
+      IndicatorRelease(maHandle);
+      return INIT_PARAMETERS_INCORRECT;
+   }
+   
+   MqlDateTime dt;
+   TimeToStruct(TimeTradeServer(), dt);
+   dt.hour = 0; dt.min = 0; dt.sec = 0;
+   lastTradeDay = StructToTime(dt);
+   
+   Print("[INIT] Scalp Guru V4 Started");
+   Print("[INIT] Timeframe: ", EnumToString(timeframe));
+   Print("[INIT] ATR Period: ", ATRPeriod, ", Keltner Period: ", KeltnerPeriod);
+   Print("[INIT] Keltner Multiplier: ", KeltnerMultiplier, ", SL ATR Multiplier: ", SL_ATRMultiplier);
+   Print("[INIT] Risk Per Trade: ", EnableRiskPerTrade ? "Enabled" : "Disabled", ", Manual Lot Size: ", DoubleToString(ManualLotSize, 3));
+   Print("[INIT] Allow Buys: ", AllowBuyTrades, ", Allow Sells: ", AllowSellTrades);
+   Print("[INIT] Max Trades Per Day: ", MaxTradesPerDay);
+   
+   return(INIT_SUCCEEDED);
+}
+//+------------------------------------------------------------------+
+//| Expert deinitialization function                                   |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+{
+ObjectDelete(0, "KeltnerUpper");
+ObjectDelete(0, "KeltnerMiddle");
+ObjectDelete(0, "KeltnerLower");
+IndicatorRelease(atrHandle);
+IndicatorRelease(maHandle);
+Print("EA Deinitialized, Reason: ", reason);
+}
+//+------------------------------------------------------------------+
+//| Calculate Trade Progress Percentage                                |
+//+------------------------------------------------------------------+
+double CalculateTradeProgress()
+{
+double currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+double predictedPrice = currentPrice + (GetTrendVelocity() * 0.0);
+double progress = 0.0;
+// Buy trade progress: 0% at keltnerMid, 99% when close2 < keltnerLower, 100% when trade triggered
+if (AllowBuyTrades && predictedPrice <= keltnerMid)
+{
+double distanceToLower = MathMax(keltnerMid - predictedPrice, 0);
+double totalDistance = MathMax(keltnerMid - keltnerLower, 0.01);
+if (totalDistance > 0)
+{
+progress = MathMin((distanceToLower / totalDistance) * 90.0, 90.0); // Scale to 90% max
+if (closeBuffer[2] < keltnerLower)
+{
+progress = MathMin(progress + 9.0, 99.0); // Add 9% when close2 < keltnerLower
+if (predictedPrice > keltnerLower)
+{
+progress = 100.0; // Trade triggered
+}
+}
+}
+}
+// Sell trade progress: 0% at keltnerMid, 99% when close2 > keltnerUpper, 100% when trade triggered
+if (AllowSellTrades && predictedPrice >= keltnerMid)
+{
+double distanceToUpper = MathMax(predictedPrice - keltnerMid, 0);
+double totalDistance = MathMax(keltnerUpper - keltnerMid, 0.01);
+if (totalDistance > 0)
+{
+progress = MathMin((distanceToUpper / totalDistance) * 90.0, 90.0); // Scale to 90% max
+if (closeBuffer[2] > keltnerUpper)
+{
+progress = MathMin(progress + 9.0, 99.0); // Add 9% when close2 > keltnerUpper
+if (predictedPrice < keltnerUpper)
+{
+progress = 100.0; // Trade triggered
+}
+}
+}
+}
+return progress;
+}
+//+------------------------------------------------------------------+
+//| Count open positions for this EA                                  |
+//+------------------------------------------------------------------+
+int CountOpenPositions()
+{
+int count = 0;
+for (int i = PositionsTotal() - 1; i >= 0; i--)
+{
+ulong ticket = PositionGetTicket(i);
+if (ticket > 0 && PositionGetString(POSITION_SYMBOL) == _Symbol && PositionGetInteger(POSITION_MAGIC) == MagicNumber)
+{
+count++;
+}
+}
+return count;
+}
+//+------------------------------------------------------------------+
+//| Expert tick function                                              |
+//+------------------------------------------------------------------+
+void OnTick()
+{
+datetime serverTime = TimeTradeServer();
+MqlDateTime timeStruct;
+TimeToStruct(serverTime, timeStruct);
+int currentDay = timeStruct.day_of_week;
+int currentMonth = timeStruct.mon;
+MqlDateTime dt;
+TimeToStruct(serverTime, dt);
+dt.hour = 0; dt.min = 0; dt.sec = 0;
+datetime todayStart = StructToTime(dt);
+if (todayStart != lastTradeDay)
+{
+tradesToday = 0;
+lastTradeDay = todayStart;
+}
+// Check for month skip
+bool skipCurrentMonth = false;
+if (EnableMonthSkip)
+{
+if ((currentMonth == 1 && SkipJanuary) ||
+(currentMonth == 2 && SkipFebruary) ||
+(currentMonth == 3 && SkipMarch) ||
+(currentMonth == 4 && SkipApril) ||
+(currentMonth == 5 && SkipMay) ||
+(currentMonth == 6 && SkipJune) ||
+(currentMonth == 7 && SkipJuly) ||
+(currentMonth == 8 && SkipAugust) ||
+(currentMonth == 9 && SkipSeptember) ||
+(currentMonth == 10 && SkipOctober) ||
+(currentMonth == 11 && SkipNovember) ||
+(currentMonth == 12 && SkipDecember))
+{
+skipCurrentMonth = true;
+}
+}
+if (skipCurrentMonth)
+{
+static int lastMonthSkip = 0;
+if (currentMonth != lastMonthSkip)
+{
+string monthNames[] = {"", "January", "February", "March", "April", "May", "June",
+"July", "August", "September", "October", "November", "December"};
+Print("Skipping trading in ", monthNames[currentMonth], " (Month ", currentMonth, ")");
+lastMonthSkip = currentMonth;
+}
+}
+// Check for day skip
+bool skipCurrentDay = false;
+if (EnableDaySkip)
+{
+if ((currentDay == 1 && SkipMonday) ||
+(currentDay == 2 && SkipTuesday) ||
+(currentDay == 3 && SkipWednesday) ||
+(currentDay == 4 && SkipThursday) ||
+(currentDay == 5 && SkipFriday))
+{
+skipCurrentDay = true;
+}
+}
+if (skipCurrentDay)
+{
+static int lastDaySkip = 0;
+if (timeStruct.day != lastDaySkip)
+{
+string dayNames[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+Print("Skipping trading on ", dayNames[currentDay], " (Day ", currentDay, ")");
+lastDaySkip = timeStruct.day;
+}
+}
+bool isSkipped = skipCurrentMonth || skipCurrentDay;
+// Always update essential indicators for trade management
+if (CopyBuffer(atrHandle, 0, 0, 3, atrBuffer) <= 0 || CopyClose(_Symbol, timeframe, 0, 3, closeBuffer) <= 0)
+{
+Print("[ERROR] Failed to update indicators: ", GetLastError());
+return;
+}
+atrValue = atrBuffer[0];
+double predictedPrice = 0;
+double close2 = closeBuffer[2];
+if (!isSkipped)
+{
+if (CopyBuffer(maHandle, 0, 0, 3, maBuffer) <= 0)
+{
+Print("[ERROR] Failed to update MA buffer: ", GetLastError());
+return;
+}
+double ema = maBuffer[0];
+keltnerUpper = MathMax(ema + KeltnerMultiplier * atrValue, 0);
+keltnerLower = MathMax(ema - KeltnerMultiplier * atrValue, 0);
+keltnerMid = ema;
+double close1 = closeBuffer[1];
+double currentPrice = SymbolInfoDouble(_Symbol, SYMBOL_ASK); // For entry prediction
+predictedPrice = currentPrice + (GetTrendVelocity() * 0.0);
+// Manage Keltner Channel display
+if (ShowKeltnerOnChart)
+{
+DrawKeltnerChannels();
+}
+else
+{
+ObjectDelete(0, "KeltnerUpper");
+ObjectDelete(0, "KeltnerMiddle");
+ObjectDelete(0, "KeltnerLower");
+ChartRedraw();
+}
+static datetime lastProgressLog = 0;
+if (!inTrade && (serverTime - lastProgressLog >= 60))
+{
+double progress = CalculateTradeProgress();
+if (progress > 0.0 && progress < 100.0) // Only print if progress is 0-99.9%
+{
+string tradeType = (predictedPrice <= keltnerMid) ? "Buy" : "Sell";
+Print(StringFormat("Trade Progress: %s trade countdown %.1f%% to entry", tradeType, progress));
+lastProgressLog = serverTime;
+}
+}
+int openPositions = CountOpenPositions();
+// FIX: Changed openPositions == 0 to !inTrade to prevent duplication due to async position updates
+if (!inTrade && (!EnableMaxTradesPerDay || tradesToday < MaxTradesPerDay))
+{
+if (AllowBuyTrades && close2 < keltnerLower && predictedPrice > keltnerLower) // Adjusted for entry
+{
+OpenBuyTrade();
+}
+else if (AllowSellTrades && close2 > keltnerUpper && predictedPrice < keltnerUpper)
+{
+OpenSellTrade();
+}
+}
+}
+ManageTrades();
+}
+//+------------------------------------------------------------------+
+//| Draw Keltner Channels on Chart                                    |
+//+------------------------------------------------------------------+
+void DrawKeltnerChannels()
+{
+datetime currentBarTime = iTime(_Symbol, timeframe, 0);
+datetime lastBarTime = iTime(_Symbol, timeframe, 1);
+// Update or create Keltner Upper line
+if (ObjectFind(0, "KeltnerUpper") >= 0)
+{
+ObjectMove(0, "KeltnerUpper", 0, lastBarTime, keltnerUpper);
+ObjectMove(0, "KeltnerUpper", 1, currentBarTime, keltnerUpper);
+}
+else
+{
+ObjectCreate(0, "KeltnerUpper", OBJ_TREND, 0, lastBarTime, keltnerUpper, currentBarTime, keltnerUpper);
+ObjectSetInteger(0, "KeltnerUpper", OBJPROP_COLOR, clrRed);
+ObjectSetInteger(0, "KeltnerUpper", OBJPROP_STYLE, STYLE_SOLID);
+ObjectSetInteger(0, "KeltnerUpper", OBJPROP_WIDTH, 1);
+ObjectSetInteger(0, "KeltnerUpper", OBJPROP_RAY, true); // Extend to the right
+}
+// Update or create Keltner Middle line
+if (ObjectFind(0, "KeltnerMiddle") >= 0)
+{
+ObjectMove(0, "KeltnerMiddle", 0, lastBarTime, keltnerMid);
+ObjectMove(0, "KeltnerMiddle", 1, currentBarTime, keltnerMid);
+}
+else
+{
+ObjectCreate(0, "KeltnerMiddle", OBJ_TREND, 0, lastBarTime, keltnerMid, currentBarTime, keltnerMid);
+ObjectSetInteger(0, "KeltnerMiddle", OBJPROP_COLOR, clrBlue);
+ObjectSetInteger(0, "KeltnerMiddle", OBJPROP_STYLE, STYLE_SOLID);
+ObjectSetInteger(0, "KeltnerMiddle", OBJPROP_WIDTH, 1);
+ObjectSetInteger(0, "KeltnerMiddle", OBJPROP_RAY, true); // Extend to the right
+}
+// Update or create Keltner Lower line
+if (ObjectFind(0, "KeltnerLower") >= 0)
+{
+ObjectMove(0, "KeltnerLower", 0, lastBarTime, keltnerLower);
+ObjectMove(0, "KeltnerLower", 1, currentBarTime, keltnerLower);
+}
+else
+{
+ObjectCreate(0, "KeltnerLower", OBJ_TREND, 0, lastBarTime, keltnerLower, currentBarTime, keltnerLower);
+ObjectSetInteger(0, "KeltnerLower", OBJPROP_COLOR, clrGreen);
+ObjectSetInteger(0, "KeltnerLower", OBJPROP_STYLE, STYLE_SOLID);
+ObjectSetInteger(0, "KeltnerLower", OBJPROP_WIDTH, 1);
+ObjectSetInteger(0, "KeltnerLower", OBJPROP_RAY, true); // Extend to the right
+}
+ChartRedraw();
+}
+//+------------------------------------------------------------------+
+//| Calculate Keltner Upper Band                                      |
+//+------------------------------------------------------------------+
+double iKeltnerUpper()
+{
+return keltnerUpper;
+}
+//+------------------------------------------------------------------+
+//| Calculate Keltner Lower Band                                      |
+//+------------------------------------------------------------------+
+double iKeltnerLower()
+{
+return keltnerLower;
+}
+//+------------------------------------------------------------------+
+//| Open Buy Trade                                                    |
+//+------------------------------------------------------------------+
+void OpenBuyTrade()
+{
+   double price = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+   double lotSize = CalculateLotSize(price);
+   double sl = NormalizeDouble(price - SL_ATRMultiplier * atrValue, _Digits);
+   double takeProfit = 0;
+   double margin;
+   
+   if(!OrderCalcMargin(ORDER_TYPE_BUY, _Symbol, lotSize, price, margin))
+   {
+      Print("[ERROR] Failed to calculate margin for Buy trade: ", GetLastError());
+      return;
+   }
+   
+   if(AccountInfoDouble(ACCOUNT_MARGIN_FREE) < margin)
+   {
+      Print("[ERROR] Insufficient margin for Buy trade. Required: ", margin, ", Available: ", AccountInfoDouble(ACCOUNT_MARGIN_FREE));
+      return;
+   }
+   
+   if (trade.Buy(lotSize, _Symbol, price, sl, takeProfit, "ScalpGuru Buy"))
+   {
+      inTrade = true;
+      tradesToday++;
+      partialClosed = false;
+      Print("[TRADE] Buy opened: Price=", DoubleToString(price, _Digits), 
+            ", Lots=", DoubleToString(lotSize, 2), 
+            ", SL=", DoubleToString(sl, _Digits), 
+            ", Trades today: ", tradesToday);
+   }
+   else
+   {
+      Print("[ERROR] Failed to open Buy trade: ", GetLastError());
+   }
+}
+//+------------------------------------------------------------------+
+//| Open Sell Trade                                                   |
+//+------------------------------------------------------------------+
+void OpenSellTrade()
+{
+   double price = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+   double lotSize = CalculateLotSize(price);
+   double sl = NormalizeDouble(price + SL_ATRMultiplier * atrValue, _Digits);
+   double takeProfit = 0;
+   double margin;
+   
+   if(!OrderCalcMargin(ORDER_TYPE_SELL, _Symbol, lotSize, price, margin))
+   {
+      Print("[ERROR] Failed to calculate margin for Sell trade: ", GetLastError());
+      return;
+   }
+   
+   if(AccountInfoDouble(ACCOUNT_MARGIN_FREE) < margin)
+   {
+      Print("[ERROR] Insufficient margin for Sell trade. Required: ", margin, ", Available: ", AccountInfoDouble(ACCOUNT_MARGIN_FREE));
+      return;
+   }
+   
+   if (trade.Sell(lotSize, _Symbol, price, sl, takeProfit, "ScalpGuru Sell"))
+   {
+      inTrade = true;
+      tradesToday++;
+      partialClosed = false;
+      Print("[TRADE] Sell opened: Price=", DoubleToString(price, _Digits), 
+            ", Lots=", DoubleToString(lotSize, 2), 
+            ", SL=", DoubleToString(sl, _Digits), 
+            ", Trades today: ", tradesToday);
+   }
+   else
+   {
+      Print("[ERROR] Failed to open Sell trade: ", GetLastError());
+   }
+}
+//+------------------------------------------------------------------+
+//| Calculate Lot Size                                                |
+//+------------------------------------------------------------------+
+double CalculateLotSize(double price)
+{
+   if (EnableRiskPerTrade)
+   {
+      double riskAmount = AccountBalance * (RiskPerTradePercent / 100.0);
+      double slDistance = SL_ATRMultiplier * atrValue;
+      double tickSize = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
+      double tickValue = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_VALUE);
+      
+      if(tickSize == 0 || tickValue == 0)
+      {
+         Print("[ERROR] Invalid tick size or tick value");
+         return NormalizeDouble(ManualLotSize, 2);
+      }
+      
+      double slPoints = slDistance / tickSize;
+      double lotSize = NormalizeDouble(riskAmount / (slPoints * tickValue), 2);
+      
+      double minLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
+      if (lotSize < minLot)
+      {
+         Print("[WARNING] Calculated lot size (", lotSize, ") below minimum (", minLot, "). Using minimum.");
+         lotSize = minLot;
+      }
+      
+      double maxLot = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX);
+      if (lotSize > maxLot)
+      {
+         Print("[WARNING] Calculated lot size (", lotSize, ") above maximum (", maxLot, "). Using maximum.");
+         lotSize = maxLot;
+      }
+      
+      return lotSize;
+   }
+   else
+   {
+      return NormalizeDouble(ManualLotSize, 2);
+   }
+}
+//+------------------------------------------------------------------+
+//| Manage Open Trades                                                |
+//+------------------------------------------------------------------+
+void ManageTrades()
+{
+   ulong posTicket = 0;
+   
+   // Find position for this symbol and magic number
+   for (int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if (ticket > 0 && PositionGetString(POSITION_SYMBOL) == _Symbol && PositionGetInteger(POSITION_MAGIC) == MagicNumber)
+      {
+         posTicket = ticket;
+         break;
+      }
+   }
+   
+   if (posTicket == 0)
+   {
+      inTrade = false;
+      partialClosed = false;
+      return;
+   }
+   
+   if (!PositionSelectByTicket(posTicket))
+   {
+      inTrade = false;
+      partialClosed = false;
+      return;
+   }
+   
+   ENUM_POSITION_TYPE type = (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
+   double entry = PositionGetDouble(POSITION_PRICE_OPEN);
+   double currentSL = PositionGetDouble(POSITION_SL);
+   double currentPrice = (type == POSITION_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_BID) : SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+   double volume = PositionGetDouble(POSITION_VOLUME);
+   double riskDistance = MathAbs(entry - currentSL);
+   double rr1Price = (type == POSITION_TYPE_BUY) ? entry + riskDistance : entry - riskDistance;
+   double rr2Price = (type == POSITION_TYPE_BUY) ? entry + 2 * riskDistance : entry - 2 * riskDistance;
+   
+   // Max loss protection
+   double floating = PositionGetDouble(POSITION_PROFIT);
+   double threshold = -MaxLossPercent / 100.0 * AccountBalance;
+   if (floating < threshold)
+   {
+      if(trade.PositionClose(posTicket))
+      {
+         inTrade = false;
+         partialClosed = false;
+         Print("[TRADE] Closed: Loss protection triggered, Loss: ", DoubleToString(floating, 2));
+      }
+      return;
+   }
+   
+   // Partial close at 1:1 RR
+   if (!partialClosed && ((type == POSITION_TYPE_BUY && currentPrice >= rr1Price) || 
+                          (type == POSITION_TYPE_SELL && currentPrice <= rr1Price)))
+   {
+      double partialVol = NormalizeDouble(volume * (PartialClosePercent / 100.0), 2);
+      
+      if (partialVol < SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN))
+      {
+         Print("[WARNING] Partial close volume too small, closing entire position");
+         if(trade.PositionClose(posTicket))
+         {
+            inTrade = false;
+            partialClosed = false;
+            Print("[TRADE] Full close at 1:1 RR (volume too small for partial)");
+         }
+         return;
+      }
+      
+      if (trade.PositionClosePartial(posTicket, partialVol))
+      {
+         // Move SL to breakeven
+         double newSL = NormalizeDouble(entry, _Digits);
+         if(trade.PositionModify(posTicket, newSL, 0))
+         {
+            partialClosed = true;
+            Print("[TRADE] Partial close ", PartialClosePercent, "% at 1:1 RR, SL to BE: ", DoubleToString(entry, _Digits));
+         }
+      }
+   }
+   
+   // Full close at 2:1 RR
+   if (partialClosed && ((type == POSITION_TYPE_BUY && currentPrice >= rr2Price) || 
+                          (type == POSITION_TYPE_SELL && currentPrice <= rr2Price)))
+   {
+      if(trade.PositionClose(posTicket))
+      {
+         inTrade = false;
+         partialClosed = false;
+         Print("[TRADE] Full close at 2:1 RR");
+      }
+   }
+   
+   inTrade = true;
+}
+//+------------------------------------------------------------------+
+//| Custom Indicator Wrappers                                         |
+//+------------------------------------------------------------------+
+double GetTrendVelocity()
+{
+double priceChange = closeBuffer[0] - closeBuffer[1];
+double timeInterval = PeriodSeconds(timeframe) / 60.0;
+return priceChange / timeInterval;
+}
+double GetATR(string symbol, ENUM_TIMEFRAMES tf, int period)
+{
+return atrValue;
+}
+double GetMA(string symbol, ENUM_TIMEFRAMES tf, int period, int shift, ENUM_MA_METHOD method, int applied_price)
+{
+return maBuffer[shift];
+}
+double GetClose(string symbol, ENUM_TIMEFRAMES tf, int shift)
+{
+return closeBuffer[shift];
+}
