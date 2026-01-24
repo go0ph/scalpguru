@@ -189,9 +189,21 @@ double stochKBuffer[], stochDBuffer[];  // Stochastic %K and %D buffers
 double trendEmaBuffer[];            // Trend EMA buffer
 
 // Constants
-#define PIPS_TO_POINTS 10  // Multiplier to convert pips to points
+#define PIPS_TO_POINTS 10  // Multiplier to convert pips to points (for 5-digit brokers where 1 pip = 10 points)
 #define CANDLE_WICK_RATIO 0.6    // Wick must be >= 60% of candle range for hammer/shooting star
 #define CANDLE_BODY_RATIO 0.4    // Body must be <= 40% of candle range for hammer/shooting star
+
+// V10 Data-Driven Constants (based on 2020-2025 XAUUSD hourly data analysis)
+// Source: 32,080+ hourly candles from data/xauusd/XAU_1h_data.csv
+// These values can be regenerated using: python data/xauusd/update_xauusd_data.py --constants
+#define VOL_LOW_THRESHOLD 3.86     // 25th percentile ATR (low volatility regime)
+#define VOL_HIGH_THRESHOLD 6.24    // 75th percentile ATR (high volatility regime)
+#define V10_AVG_ATR 5.52           // Average ATR over analysis period
+#define V10_MEDIAN_ATR 4.86        // Median ATR over analysis period
+
+// V10 Risk multiplier bounds
+#define RISK_MULT_MIN 0.3          // Minimum risk multiplier (30% of base)
+#define RISK_MULT_MAX 1.3          // Maximum risk multiplier (130% of base)
 
 //--- Include Libraries
 #include <Trade\Trade.mqh>
@@ -555,15 +567,15 @@ void UpdateInfoPanel()
    else if(progress >= 50) progressColor = clrOrange;
    ObjectSetInteger(0, "SG_Progress", OBJPROP_COLOR, progressColor);
    
-   // V9: Update volatility regime display
+   // V10: Update volatility regime display using data-driven thresholds
    string volRegime = "Normal";
    color volColor = clrCyan;
-   if(atrValue < 5.58)
+   if(atrValue < VOL_LOW_THRESHOLD)
    {
       volRegime = "Low";
       volColor = clrLime;
    }
-   else if(atrValue > 14.74)
+   else if(atrValue > VOL_HIGH_THRESHOLD)
    {
       volRegime = "High";
       volColor = clrOrange;
@@ -932,7 +944,7 @@ bool CheckFundedAccountLimits()
    if(profit >= targetAmount && !profitTargetReached)
    {
       profitTargetReached = true;
-      Print("[FUNDED] 🎉 PROFIT TARGET REACHED! Profit: $", DoubleToString(profit, 2), " (", DoubleToString((profit/overallStartBalance)*100, 2), "%)");
+      Print("[FUNDED] *** PROFIT TARGET REACHED! Profit: $", DoubleToString(profit, 2), " (", DoubleToString((profit/overallStartBalance)*100, 2), "%)");
    }
    
    // V10: Check daily profit target
@@ -942,7 +954,7 @@ bool CheckFundedAccountLimits()
       if(!dailyProfitTargetHit)
       {
          dailyProfitTargetHit = true;
-         Print("[FUNDED] ✅ V10 DAILY PROFIT TARGET HIT! Profit: $", DoubleToString(dailyEquityChange, 2), " - No more trades today to protect gains");
+         Print("[FUNDED] +++ V10 DAILY PROFIT TARGET HIT! Profit: $", DoubleToString(dailyEquityChange, 2), " - No more trades today to protect gains");
       }
       return false;  // Stop trading to protect daily gains
    }
@@ -952,7 +964,7 @@ bool CheckFundedAccountLimits()
    {
       if(!drawdownLimitHit)
       {
-         Print("[FUNDED] ⚠️ WARNING: Approaching max drawdown! Current DD: ", DoubleToString(overallDrawdownPercent, 2), "%, Limit: ", MaxDrawdownPercent, "%");
+         Print("[FUNDED] !!! WARNING: Approaching max drawdown! Current DD: ", DoubleToString(overallDrawdownPercent, 2), "%, Limit: ", MaxDrawdownPercent, "%");
       }
    }
    
@@ -961,7 +973,7 @@ bool CheckFundedAccountLimits()
       if(!drawdownLimitHit)
       {
          drawdownLimitHit = true;
-         Print("[FUNDED] 🛑 MAX DRAWDOWN LIMIT HIT! Stopping all trading. DD: $", DoubleToString(overallDrawdown, 2));
+         Print("[FUNDED] XXX MAX DRAWDOWN LIMIT HIT! Stopping all trading. DD: $", DoubleToString(overallDrawdown, 2));
          // Close any open positions to prevent further loss
          CloseAllPositions();
       }
@@ -976,7 +988,7 @@ bool CheckFundedAccountLimits()
    {
       if(!dailyLimitHit)
       {
-         Print("[FUNDED] ⚠️ WARNING: Approaching daily loss limit! Daily loss: $", DoubleToString(-dailyEquityChange, 2), ", Limit: $", DoubleToString(dailyLossLimit, 2));
+         Print("[FUNDED] !!! WARNING: Approaching daily loss limit! Daily loss: $", DoubleToString(-dailyEquityChange, 2), ", Limit: $", DoubleToString(dailyLossLimit, 2));
       }
    }
    
@@ -985,7 +997,7 @@ bool CheckFundedAccountLimits()
       if(!dailyLimitHit)
       {
          dailyLimitHit = true;
-         Print("[FUNDED] 🛑 DAILY LOSS LIMIT HIT! No more trades today. Loss: $", DoubleToString(-dailyEquityChange, 2));
+         Print("[FUNDED] XXX DAILY LOSS LIMIT HIT! No more trades today. Loss: $", DoubleToString(-dailyEquityChange, 2));
          // Close any open positions
          CloseAllPositions();
       }
@@ -1456,21 +1468,22 @@ bool IsOptimalTradingHour()
    TimeToStruct(TimeCurrent(), tm);
    int hour = tm.hour;
    
-   // Based on 20+ years XAUUSD data analysis
-   // Top 5 most volatile hours: 15, 16, 17, 18, 14
-   // Top 8 hours (extended): 15, 16, 17, 18, 14, 19, 10, 0
+   // V10: Based on 2020-2025 XAUUSD hourly data analysis (32,080 candles)
+   // Top 5 most volatile hours: 16, 15, 17, 18, 10 (primarily London/NY overlap)
+   // Top 8 hours (extended): 16, 15, 17, 18, 10, 4, 14, 9
+   // Note: These can be regenerated using data/xauusd/update_xauusd_data.py --constants
    
    if(UseStrictOptimalHours)
    {
       // Strict mode: Only trade during top 5 hours
-      if(hour == 14 || hour == 15 || hour == 16 || hour == 17 || hour == 18)
+      if(hour == 10 || hour == 15 || hour == 16 || hour == 17 || hour == 18)
          return true;
    }
    else
    {
       // Standard mode: Top 8 hours
-      if(hour == 0 || hour == 10 || hour == 14 || hour == 15 || 
-         hour == 16 || hour == 17 || hour == 18 || hour == 19)
+      if(hour == 4 || hour == 9 || hour == 10 || hour == 14 || 
+         hour == 15 || hour == 16 || hour == 17 || hour == 18)
          return true;
    }
    
@@ -1478,27 +1491,27 @@ bool IsOptimalTradingHour()
 }
 
 //+------------------------------------------------------------------+
-//| V9: Get volatility regime multiplier                             |
+//| V10: Get volatility regime multiplier (using data-driven thresholds)|
 //+------------------------------------------------------------------+
 double GetVolatilityMultiplier()
 {
    if(!EnableVolatilityAdjustedRisk)
       return 1.0;
    
-   // Based on historical XAUUSD data analysis:
-   // Low volatility: ATR < $5.58
-   // Normal volatility: $5.58 <= ATR <= $14.74
-   // High volatility: ATR > $14.74
+   // V10: Using data-driven thresholds from 2020-2025 XAUUSD analysis
+   // Low volatility: ATR < VOL_LOW_THRESHOLD ($3.86)
+   // Normal volatility: VOL_LOW_THRESHOLD <= ATR <= VOL_HIGH_THRESHOLD
+   // High volatility: ATR > VOL_HIGH_THRESHOLD ($6.24)
    
-   if(atrValue < 5.58)
+   if(atrValue < VOL_LOW_THRESHOLD)
    {
-      // Low volatility: increase risk (less market movement)
-      return VolLowRiskMultiplier;  // 1.2x
+      // Low volatility: increase risk (less market movement = safer for wider stops)
+      return VolLowRiskMultiplier;  // Default 1.2x
    }
-   else if(atrValue > 14.74)
+   else if(atrValue > VOL_HIGH_THRESHOLD)
    {
       // High volatility: decrease risk (protect capital)
-      return VolHighRiskMultiplier;  // 0.8x
+      return VolHighRiskMultiplier;  // Default 0.8x
    }
    
    // Normal volatility: standard risk
@@ -1506,15 +1519,15 @@ double GetVolatilityMultiplier()
 }
 
 //+------------------------------------------------------------------+
-//| V9: Get volatility-adjusted SL multiplier                        |
+//| V10: Get volatility-adjusted SL multiplier (data-driven)          |
 //+------------------------------------------------------------------+
 double GetVolatilityAdjustedSL()
 {
    if(!EnableVolatilityAdjustedStops)
       return SL_ATRMultiplier;
    
-   // During high volatility, use tighter stops to reduce risk
-   if(atrValue > 14.74)
+   // V10: During high volatility, use tighter stops to reduce risk
+   if(atrValue > VOL_HIGH_THRESHOLD)
    {
       return SL_ATRMultiplier * HighVolStopMultiplier;  // 1.5 * 0.9 = 1.35
    }
@@ -1583,8 +1596,8 @@ double GetTotalRiskMultiplier()
    // Combine all multipliers with a minimum floor
    double total = volMult * ddMult * streakMult;
    
-   // Apply floor and ceiling
-   total = MathMax(0.3, MathMin(1.3, total));  // Between 30% and 130% of base risk
+   // Apply floor and ceiling using defined constants
+   total = MathMax(RISK_MULT_MIN, MathMin(RISK_MULT_MAX, total));
    
    return total;
 }
@@ -1722,12 +1735,8 @@ void ManageTrades()
    
    if(posTicket == 0)
    {
-      // V10: Check if a trade just closed and update streak
-      if(inTrade && lastTradeResult == 0)
-      {
-         // Trade just closed - this would be set by OnTradeTransaction if we had it
-         // For now, we track it differently
-      }
+      // Position closed - reset state flags
+      // Note: Win/loss streak tracking is handled by OnTradeTransaction
       inTrade = false;
       trailingActive = false;
       partialProfitTaken = false;

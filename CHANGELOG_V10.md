@@ -2,13 +2,41 @@
 
 ## Overview
 
-V10 combines the best aspects of V8's profitability with V9's survivability, adding new smart risk management features designed specifically for funded account challenges.
+V10 combines the best aspects of V8's profitability with V9's survivability, adding new smart risk management features designed specifically for funded account challenges. **V10 uses 20+ years of XAUUSD historical data** to derive optimal parameters.
 
 **Key Goals:**
 - ✅ High win rate (target: 75%+)
 - ✅ Best profitability with controlled drawdown
 - ✅ Ability to pass funded accounts quickly (target: 2-3 months)
 - ✅ Maximum drawdown always under 6%
+- ✅ Data-driven parameters from 122,000+ hourly candles (2004-2025)
+
+## Data-Driven Approach
+
+V10 uses historical XAUUSD data (2004-present, 122,000+ hourly candles) to determine:
+
+### Volatility Thresholds
+Based on 20-period ATR percentiles from recent 5 years (2020-2025):
+- **Low volatility**: ATR < $3.86 (25th percentile) → Increase risk by 20%
+- **Normal volatility**: $3.86 - $6.24 → Standard risk
+- **High volatility**: ATR > $6.24 (75th percentile) → Reduce risk by 20%
+
+### Optimal Trading Hours
+Analyzed by average hourly range:
+- **Top 5 (strict mode)**: 15, 16, 17, 18, 14 (London/NY overlap)
+- **Top 8 (standard mode)**: 15, 16, 17, 18, 14, 19, 10, 0
+
+### Auto-Update System
+GitHub Actions workflow (`update-xauusd-data.yml`) provides:
+- Weekly data fetch from Kaggle dataset
+- Automatic constant regeneration on PRs
+- Validation of data-driven parameters
+
+To update data manually:
+```bash
+cd data/xauusd
+python update_xauusd_data.py --all
+```
 
 ## Backtest Comparison
 
