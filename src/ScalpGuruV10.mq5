@@ -194,7 +194,7 @@ double trendEmaBuffer[];            // Trend EMA buffer
 #define CANDLE_BODY_RATIO 0.4    // Body must be <= 40% of candle range for hammer/shooting star
 
 // V10 Data-Driven Constants (based on 2020-2025 XAUUSD hourly data analysis)
-// Source: 32,080+ hourly candles from data/xauusd/XAU_1h_data.csv
+// Source: ~32,000 hourly candles from data/xauusd/XAU_1h_data.csv (filtered for trading hours)
 // These values can be regenerated using: python data/xauusd/update_xauusd_data.py --constants
 #define VOL_LOW_THRESHOLD 3.86     // 25th percentile ATR (low volatility regime)
 #define VOL_HIGH_THRESHOLD 6.24    // 75th percentile ATR (high volatility regime)
@@ -1773,7 +1773,7 @@ void ManageTrades()
          trailingActive = false;
          partialProfitTaken = false;
          secondPartialTaken = false;
-         UpdateTradeStreak(-1);  // V10: Track loss
+         // Note: Win/loss streak tracking is handled by OnTradeTransaction
          Print("[TRADE] Closed: Loss protection triggered, Loss: ", DoubleToString(floating, 2));
       }
       return;

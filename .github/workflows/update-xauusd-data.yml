@@ -14,9 +14,15 @@ on:
       - 'data/xauusd/**'
       - 'src/ScalpGuruV10.mq5'
 
+# Set minimal permissions at workflow level
+permissions:
+  contents: read
+
 jobs:
   update-data:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Needed for pushing updates on schedule
     
     steps:
       - name: Checkout repository
@@ -85,6 +91,8 @@ jobs:
   validate-pr:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
+    permissions:
+      contents: read  # Only need read access for validation
     
     steps:
       - name: Checkout repository
