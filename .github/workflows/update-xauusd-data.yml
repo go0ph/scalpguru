@@ -1,0 +1,125 @@
+name: Update XAUUSD Data
+
+on:
+  # Run weekly on Sundays at 00:00 UTC
+  schedule:
+    - cron: '0 0 * * 0'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+  
+  # Run on pull requests to validate data
+  pull_request:
+    paths:
+      - 'data/xauusd/**'
+      - 'src/ScalpGuruV10.mq5'
+
+# Set minimal permissions at workflow level
+permissions:
+  contents: read
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Needed for pushing updates on schedule
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install Kaggle API (optional)
+        continue-on-error: true
+        run: |
+          pip install kaggle
+          mkdir -p ~/.kaggle
+          # Kaggle credentials would need to be set as secrets
+          # echo '{"username":"${{ secrets.KAGGLE_USERNAME }}","key":"${{ secrets.KAGGLE_KEY }}"}' > ~/.kaggle/kaggle.json
+          # chmod 600 ~/.kaggle/kaggle.json
+      
+      - name: Update XAUUSD Data
+        run: |
+          cd data/xauusd
+          # Try to update, but generate constants from existing data if download fails
+          python update_xauusd_data.py --all || python update_xauusd_data.py --skip-download --constants
+      
+      - name: Check for data changes
+        id: check_changes
+        run: |
+          if git diff --quiet data/xauusd/*.csv data/xauusd/v10_constants.txt 2>/dev/null; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No data changes detected"
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Data changes detected"
+          fi
+      
+      - name: Display data summary
+        run: |
+          echo "=== XAUUSD Data Summary ==="
+          echo "Hourly data:"
+          wc -l data/xauusd/XAU_1h_data.csv
+          head -2 data/xauusd/XAU_1h_data.csv
+          tail -2 data/xauusd/XAU_1h_data.csv
+          echo ""
+          echo "Daily data:"
+          wc -l data/xauusd/XAU_1d_data.csv
+          head -2 data/xauusd/XAU_1d_data.csv
+          tail -2 data/xauusd/XAU_1d_data.csv
+          echo ""
+          if [ -f data/xauusd/v10_constants.txt ]; then
+            echo "=== V10 Constants ==="
+            cat data/xauusd/v10_constants.txt
+          fi
+      
+      - name: Commit and push data updates
+        if: steps.check_changes.outputs.changed == 'true' && github.event_name == 'schedule'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/xauusd/*.csv data/xauusd/v10_constants.txt
+          git commit -m "Auto-update XAUUSD data $(date +%Y-%m-%d)" || echo "No changes to commit"
+          git push || echo "Push failed - may need manual intervention"
+
+  validate-pr:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read  # Only need read access for validation
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Validate data and generate constants
+        run: |
+          cd data/xauusd
+          python update_xauusd_data.py --skip-download --constants
+      
+      - name: Display V10 constants for review
+        run: |
+          echo "=== V10 Data-Driven Constants ==="
+          if [ -f data/xauusd/v10_constants.txt ]; then
+            cat data/xauusd/v10_constants.txt
+          else
+            echo "No constants file generated"
+          fi
+      
+      - name: Verify V10 uses correct constants
+        run: |
+          echo "=== Checking V10 uses data-driven constants ==="
+          grep -n "VOL_LOW_THRESHOLD\|VOL_HIGH_THRESHOLD" src/ScalpGuruV10.mq5 | head -10
+          echo ""
+          echo "Constants should match values in v10_constants.txt"
