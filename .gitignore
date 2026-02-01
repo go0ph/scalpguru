@@ -19,3 +19,6 @@ Thumbs.db
 
 # Test outputs
 /tmp/
+
+# Archived old versions
+/archive/
