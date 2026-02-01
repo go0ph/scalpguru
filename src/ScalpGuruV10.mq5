@@ -13,7 +13,7 @@ CTrade trade;
 //--- Trading Configuration
 input group "=== Trading Configuration ==="
 input int MagicNumber = 15140;              
-input double AccountBalance = 6000.0;       
+input double AccountBalance = 6000.0;       // Funded account size for risk calculations & limit percentages (set to your funded challenge size)
 input double RiskPerTradePercent = 1.0;     
 input bool EnableRiskPerTrade = true;       
 input double ManualLotSize = 0.01;          
@@ -219,9 +219,22 @@ int OnInit()
 
    if(EnableFundedMode)
    {
+      // CRITICAL: AccountBalance input parameter = User-configured funded challenge baseline
+      // This is the funded account size (e.g., 6000 for $6k challenge, 15000 for $15k challenge)
+      // ALL percentage-based limits are calculated from THIS value, not actual balance
+      // User MUST set this correctly - if misconfigured, that's user's responsibility!
       overallStartBalance = AccountBalance;
+      
+      // Track actual starting balance for daily monitoring and enforcement
+      // The system will monitor ACTUAL equity and compare against the baseline above
       dailyStartBalance = AccountInfoDouble(ACCOUNT_BALANCE);
       dailyPnL = 0; dailyLimitHit = false; drawdownLimitHit = false; profitTargetReached = false;
+      
+      // Log the configuration
+      Print("[FUNDED MODE] Funded account size (baseline): $", DoubleToString(AccountBalance, 2));
+      Print("[FUNDED MODE] Current actual balance: $", DoubleToString(dailyStartBalance, 2));
+      Print("[FUNDED MODE] Max allowed drawdown: ", DoubleToString(MaxDrawdownPercent, 2), "% ($", DoubleToString(AccountBalance * MaxDrawdownPercent / 100, 2), ")");
+      Print("[FUNDED MODE] Daily loss limit: ", DoubleToString(DailyLossLimitPercent, 2), "% ($", DoubleToString(AccountBalance * DailyLossLimitPercent / 100, 2), ")");
    }
    
    // Create info panel
