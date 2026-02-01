@@ -219,11 +219,14 @@ int OnInit()
 
    if(EnableFundedMode)
    {
-      // AccountBalance input parameter = Funded account baseline size (user-configured)
-      // Used to calculate risk limits as percentages of this baseline
+      // CRITICAL: AccountBalance input parameter = User-configured funded challenge baseline
+      // This is the funded account size (e.g., 6000 for $6k challenge, 15000 for $15k challenge)
+      // ALL percentage-based limits are calculated from THIS value, not actual balance
+      // User MUST set this correctly - if misconfigured, that's user's responsibility!
       overallStartBalance = AccountBalance;
       
-      // Track actual starting balance for daily monitoring
+      // Track actual starting balance for daily monitoring and enforcement
+      // The system will monitor ACTUAL equity and compare against the baseline above
       dailyStartBalance = AccountInfoDouble(ACCOUNT_BALANCE);
       dailyPnL = 0; dailyLimitHit = false; drawdownLimitHit = false; profitTargetReached = false;
       
