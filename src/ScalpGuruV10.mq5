@@ -13,7 +13,7 @@ CTrade trade;
 //--- Trading Configuration
 input group "=== Trading Configuration ==="
 input int MagicNumber = 15140;              
-input double AccountBalance = 6000.0;       
+input double AccountBalance = 6000.0;       // Account size for risk calculations (set to your actual balance)
 input double RiskPerTradePercent = 1.0;     
 input bool EnableRiskPerTrade = true;       
 input double ManualLotSize = 0.01;          
@@ -220,8 +220,9 @@ int OnInit()
    if(EnableFundedMode)
    {
       // Use actual account balance for tracking, but AccountBalance parameter for risk calculations
-      overallStartBalance = AccountInfoDouble(ACCOUNT_BALANCE);
-      dailyStartBalance = AccountInfoDouble(ACCOUNT_BALANCE);
+      double actualBalance = AccountInfoDouble(ACCOUNT_BALANCE);
+      overallStartBalance = actualBalance;
+      dailyStartBalance = actualBalance;
       dailyPnL = 0; dailyLimitHit = false; drawdownLimitHit = false; profitTargetReached = false;
       
       // Log the starting balance for reference
