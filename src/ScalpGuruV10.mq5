@@ -30,11 +30,11 @@ input double ProfitTargetPercent = 10.0;
 
 //--- Strategy Parameters
 input group "=== Strategy Parameters ==="
-input int ATRPeriod = 133;                   
-input int KeltnerPeriod = 64;               
-input double KeltnerMultiplier = 3.75;       
-input double SL_ATRMultiplier = 7.54;         
-input double BreakevenBuffer = 2.46;         
+input int ATRPeriod = 133;                    // ATR period (optimized for backtest)
+input int KeltnerPeriod = 64;                // Keltner EMA period (optimized)
+input double KeltnerMultiplier = 3.75;       // Keltner band width (wider = more extreme entries)
+input double SL_ATRMultiplier = 7.54;        // ⚠️ VERY WIDE SL - High capital requirement!
+input double BreakevenBuffer = 2.46;         // Breakeven buffer in pips         
 
 //--- Profit Taking Parameters
 input group "=== Profit Taking ==="
@@ -49,9 +49,9 @@ input int SwingWindow = 58;           // Width (bars on each side) for swing hig
 //--- Entry Filters
 input group "=== Entry Filters ==="
 input bool EnableMomentumFilter = true;     
-input int RSIPeriod = 128;                   
-input int RSI_Oversold = 53;                
-input int RSI_Overbought = 645;              
+input int RSIPeriod = 128;                   // RSI calculation period
+input int RSI_Oversold = 53;                // RSI oversold threshold for buys
+input int RSI_Overbought = 645;              // ⚠️ EFFECTIVELY DISABLED (>100) - RSI filter bypassed
 input bool EnableVolumeFilter = false;      
 input double VolumeMultiplier = 1.2;        
 input bool EnableCandleConfirmation = true; 
@@ -59,10 +59,10 @@ input bool EnableCandleConfirmation = true;
 //--- V10: Data-Driven Enhancements
 input group "=== V10 Data-Driven Features ==="
 input bool EnableVolatilityAdjustedRisk = true;   
-input double VolLowRiskMultiplier = 6.36;          
-input double VolHighRiskMultiplier = 7.28;         
+input double VolLowRiskMultiplier = 6.36;          // ⚠️ EXTREME - Optimized for backtest! Use 1.2 for live
+input double VolHighRiskMultiplier = 7.28;         // ⚠️ EXTREME - Optimized for backtest! Use 0.8 for live
 input bool EnableVolatilityAdjustedStops = true;  
-input double HighVolStopMultiplier = 2.7;         
+input double HighVolStopMultiplier = 2.7;          // SL multiplier in high volatility         
 
 //--- Session Filter
 input group "=== Session Filter ==="
@@ -147,6 +147,23 @@ int OnInit()
 {
    timeframe = Period();
    trade.SetExpertMagicNumber(MagicNumber);
+   
+   // ⚠️ V10 PARAMETER WARNINGS
+   if(SL_ATRMultiplier > 3.0)
+   {
+      Print("[WARNING] V10: Stop loss multiplier ", SL_ATRMultiplier, "x is very wide!");
+      Print("[WARNING] This requires significant capital per trade. Test on demo first!");
+   }
+   if(VolLowRiskMultiplier > 2.0 || VolHighRiskMultiplier > 2.0)
+   {
+      Print("[WARNING] V10: Risk multipliers are extremely aggressive!");
+      Print("[WARNING] Low vol: ", VolLowRiskMultiplier, "x, High vol: ", VolHighRiskMultiplier, "x");
+      Print("[WARNING] These are optimized for backtest. Consider using V9 values (0.8-1.2x) for live trading!");
+   }
+   if(RSI_Overbought > 100)
+   {
+      Print("[INFO] V10: RSI overbought filter effectively disabled (", RSI_Overbought, " > 100)");
+   }
    
    atrHandle = iATR(_Symbol, timeframe, ATRPeriod);
    if(atrHandle == INVALID_HANDLE) return INIT_FAILED;
