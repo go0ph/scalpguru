@@ -54,7 +54,7 @@ input int RSI_Oversold = 53;                // RSI oversold threshold for buys
 input int RSI_Overbought = 645;              // ⚠️ EFFECTIVELY DISABLED (>100) - RSI filter bypassed
 input bool EnableVolumeFilter = false;      
 input double VolumeMultiplier = 1.2;        
-input bool EnableCandleConfirmation = false; 
+input bool EnableCandleConfirmation = true; 
 
 //--- V10: Data-Driven Enhancements
 input group "=== V10 Data-Driven Features ==="
@@ -219,9 +219,15 @@ int OnInit()
 
    if(EnableFundedMode)
    {
-      overallStartBalance = AccountBalance;
+      // Use actual account balance for tracking, but AccountBalance parameter for risk calculations
+      overallStartBalance = AccountInfoDouble(ACCOUNT_BALANCE);
       dailyStartBalance = AccountInfoDouble(ACCOUNT_BALANCE);
       dailyPnL = 0; dailyLimitHit = false; drawdownLimitHit = false; profitTargetReached = false;
+      
+      // Log the starting balance for reference
+      Print("[FUNDED MODE] Starting balance tracked: $", DoubleToString(overallStartBalance, 2));
+      Print("[FUNDED MODE] Max allowed drawdown: ", DoubleToString(MaxDrawdownPercent, 2), "% ($", DoubleToString(overallStartBalance * MaxDrawdownPercent / 100, 2), ")");
+      Print("[FUNDED MODE] Daily loss limit: ", DoubleToString(DailyLossLimitPercent, 2), "% ($", DoubleToString(overallStartBalance * DailyLossLimitPercent / 100, 2), ")");
    }
    
    // Create info panel
