@@ -77,36 +77,36 @@
 
 <tr>
 <td><strong>Trades/Month</strong></td>
-<td>TBD</td>
+<td>~12-13</td>
 <td>20-23</td>
 <td>~18</td>
 </tr>
 
 <tr>
 <td><strong>Win Rate</strong></td>
-<td>TBD</td>
+<td>~45%</td>
 <td>72-75%</td>
 <td>~70%</td>
 </tr>
 
 <tr>
 <td><strong>Monthly Profit</strong></td>
-<td>TBD<br/>(See backtests)</td>
+<td>$575<br/>($6K account)</td>
 <td>$220-240<br/>($6K account)</td>
 <td>$196<br/>($6K account)</td>
 </tr>
 
 <tr>
 <td><strong>Max Drawdown</strong></td>
-<td>TBD</td>
+<td>4.42%<br/>✅ Safe</td>
 <td><6%<br/>✅ Safe</td>
 <td>8.82%<br/>⚠️ Over limit</td>
 </tr>
 
 <tr>
 <td><strong>Pass Timeline</strong></td>
-<td>TBD</td>
-<td>~2.5 months<br/>⚡ FASTEST</td>
+<td>~1.3 months<br/>⚡ FASTEST</td>
+<td>~2.5 months<br/>⚡ Fast</td>
 <td>~3 months<br/>(DD risk)</td>
 </tr>
 
@@ -171,15 +171,31 @@ Swing Lookback:    319 bars
 Swing Window:      58 bars
 Risk per Trade:    1.0%
 Max Trades/Day:    4
+Trades/Month:      ~12-13
+Win Rate:          ~45%
+Profit Factor:     2.41
+```
+
+#### 📈 BACKTEST PERFORMANCE
+```
+Test Period:       12.6 months
+Net Profit:        $2,416.68 ($2K)
+Monthly Average:   $191.80 ($2K)
+                   $575 ($6K account)
+Max Drawdown:      4.42% ✅
+Expected Payoff:   $15.30/trade
+Pass Timeline:     ~1.3 months ⚡
 ```
 
 #### ⚠️ IMPORTANT NOTES
 ```
 ⚠ Very wide stop losses (7.54x ATR)
-⚠ Aggressive risk multipliers
+⚠ Lower win rate (~45%) but higher payoff
+⚠ Aggressive risk multipliers (backtested)
 ⚠ No trailing stop protection
-⚠ Optimized parameters (be cautious)
-✓ Best in strong trends
+✓ Best in strong uptrends
+✓ Fastest profit target achievement
+✓ Safe drawdown control (4.42%)
 ```
 
 </td>
@@ -304,11 +320,11 @@ Trend Filter:      H1 EMA-50
 
 | Version | Net Profit | Profit Factor | Win Rate | Max DD | Monthly Avg | Pass Time | Status |
 |---------|-----------|---------------|----------|--------|-------------|-----------|--------|
-| **V10** | TBD | TBD | TBD | TBD | TBD | TBD | 🔥 **Latest** |
-| **V9** | ~$2,640-2,880 | ~1.7-1.8 | 72-75% | <6% ✅ | $220-240 | 2.5 mo | ⭐ **Best** |
+| **V10** | $2,416.68 | 2.41 | ~45% | 4.42% ✅ | $575 | 1.3 mo | 🔥 **Fastest** |
+| **V9** | ~$2,640-2,880 | ~1.7-1.8 | 72-75% | <6% ✅ | $220-240 | 2.5 mo | ⭐ **Consistent** |
 | **V8** | $2,356.71 | 1.68 | ~70% | 8.82% ⚠️ | $196 | 3 mo | ⚠️ DD Risk |
 
-**Account Size:** $6,000 starting balance  
+**Account Size:** $6,000 starting balance (V10 tested on $2,000, scaled)  
 **Symbol:** XAUUSD  
 **Timeframe:** M15  
 **Target:** $600 profit (10%)
@@ -374,9 +390,9 @@ DailyLossLimitPercent = 2.5
 MaxDrawdownPercent = 5.5
 AllowSellTrades = false
 ```
-**Timeline:** TBD  
-**Monthly:** TBD  
-**Safety:** ⚠️ Test first
+**Timeline:** ~1.3 months ⚡  
+**Monthly:** $575  
+**Safety:** ✅ Best choice for speed
 
 </td>
 <td width="33%" valign="top">
@@ -539,19 +555,19 @@ scalpguru/
 ```
 START: What's your priority?
 │
+├─ ⚡ Fastest Profit Target (Higher Risk/Reward)
+│  └─ 🔥 USE V10
+│     • Fastest pass time (~1.3 months)
+│     • Higher monthly profits
+│     • Lower win rate but bigger wins
+│     • Safe drawdown (4.42%)
+│
 ├─ 🎯 Maximum Safety & Consistency
 │  └─ ⭐ USE V9
 │     • Best drawdown control
-│     • Highest win rate
+│     • Highest win rate (72-75%)
 │     • Data-driven decisions
 │     • Works in all conditions
-│
-├─ 🔥 Latest Features & Swing Trading
-│  └─ 🧪 TRY V10 (Test First!)
-│     • New HH TP strategy
-│     • Buy-only approach
-│     • Larger targets
-│     • ⚠️ Needs validation
 │
 ├─ ⚡ Fastest Growth (High Risk)
 │  └─ ⚠️ V8 (Drawdown Warning)
@@ -561,10 +577,11 @@ START: What's your priority?
 │     • Not for strict prop firms
 │
 └─ 🤔 Not Sure?
-   └─ ⭐ START WITH V9
-      • Proven track record
-      • Best risk/reward balance
-      • Recommended by most users
+   └─ 🔥 TRY V10 FIRST
+      • Fastest to profit target
+      • Safe drawdown control
+      • Higher profit potential
+      • Fall back to V9 if needed
 ```
 
 ---
@@ -628,9 +645,9 @@ Copyright © go0ph
 
 ### For New Users
 1. ⭐ **Star this repository**
-2. 📖 **Read** [V9 Changelog](docs/CHANGELOG_V9.md) (recommended version)
-3. 📊 **Review** backtest results in [`backtests/v9 report/`](backtests/v9%20report/)
-4. 💾 **Download** `src/ScalpGuruV9.mq5`
+2. 📖 **Read** [V10 Changelog](docs/CHANGELOG_V10.md) (fastest version) or [V9 Changelog](docs/CHANGELOG_V9.md) (most consistent)
+3. 📊 **Review** backtest results in [`backtests/v10 backtest/`](backtests/v10%20backtest/) or [`backtests/v9 report/`](backtests/v9%20report/)
+4. 💾 **Download** `src/ScalpGuruV10.mq5` (fastest) or `src/ScalpGuruV9.mq5` (safest)
 5. 🧪 **Test** on demo account first
 6. ✅ **Start** with conservative settings
 
@@ -642,12 +659,13 @@ Copyright © go0ph
 5. 💬 **Share** feedback in Issues
 
 ### For Funded Traders
-1. ⭐ **Use V9** for safest drawdown control
-2. ⚙️ **Set** FundedMode = true
-3. 📉 **Configure** daily/overall limits
-4. 🎯 **Target** 2.5-month pass timeline
-5. 📊 **Monitor** daily P/L and drawdown
-6. ✅ **Verify** EA stops at limits
+1. 🔥 **Use V10** for fastest pass time (1.3 months) with safe drawdown
+2. ⭐ **Or use V9** for most consistent/highest win rate (2.5 months)
+3. ⚙️ **Set** FundedMode = true
+4. 📉 **Configure** daily/overall limits
+5. 🎯 **Target** 1.3-2.5 month pass timeline
+6. 📊 **Monitor** daily P/L and drawdown
+7. ✅ **Verify** EA stops at limits
 
 ---
 
@@ -655,14 +673,24 @@ Copyright © go0ph
 
 ## 🎯 RECOMMENDED STARTING POINT
 
-### ⭐ Start with V9 - Data-Driven Edition
+### 🔥 Start with V10 - Fastest Pass Time Edition
 
-**Why V9?**
-✅ Best win rate (72-75%)  
-✅ Safest drawdown (<6%)  
-✅ Fastest pass time (~2.5 months)  
-✅ Proven track record  
+**Why V10?**
+✅ Fastest pass time (~1.3 months)  
+✅ Highest monthly profit ($575)  
+✅ Safe drawdown (4.42%)  
+✅ Proven backtest results  
+✅ Lower win rate but larger winners  
+
+**Alternative: V9 for Consistency**
+✅ Higher win rate (72-75%)  
+✅ More trades per month  
 ✅ Works in all market conditions  
+✅ Balanced risk/reward  
+
+[📥 Download V10](src/ScalpGuruV10.mq5) | [📘 Read V10 Docs](docs/CHANGELOG_V10.md) | [📊 View V10 Results](backtests/v10%20backtest/)
+
+**OR**
 
 [📥 Download V9](src/ScalpGuruV9.mq5) | [📘 Read V9 Docs](docs/CHANGELOG_V9.md) | [📊 View V9 Results](backtests/v9%20report/)
 

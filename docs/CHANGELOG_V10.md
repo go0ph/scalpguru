@@ -2,6 +2,58 @@
 
 ## Release Date: February 2026
 
+## 🆕 Production Release Updates (Feb 1, 2026)
+
+### Features Removed for Production
+1. **Monthly Trade Filter** - Removed completely
+   - No longer needed as we don't restrict trading during specific months
+   - All `EnableMonthSkip` and `Skip[Month]` inputs removed
+   - Logic simplified in OnTick function
+   
+2. **Session Filtering** - Removed completely
+   - Session hour restrictions no longer needed
+   - All `EnableSessionFilter`, `SessionStartHour`, and `SessionEndHour` inputs removed
+   - `CheckSessionFilter()` function removed
+
+### Input Parameter Cleanup
+All input parameters have been updated with clear, descriptive comments for production use:
+- Trading Configuration: Better descriptions for account balance, risk settings
+- Funded Account Protection: Clear explanation of limit behaviors
+- Strategy Parameters: Updated comments to explain purpose of each setting
+- Volatility-Adjusted Risk: Warning notes for extreme backtest-optimized values
+- Visual Settings: Clear color and display options
+
+### Order Placement Safety
+Confirmed no duplicate order bugs:
+- `inTrade` flag prevents multiple simultaneous positions
+- `tradesToday` counter enforces daily trade limits
+- `MaxTradesPerDay` check prevents over-trading
+- Margin check prevents insufficient capital trades
+
+## 📊 Backtest Results (12.6 Months, $2,000 Account)
+
+| Metric | Value |
+|--------|-------|
+| **Test Period** | M15 (2025.01.06 - 2026.01.25) |
+| **Net Profit** | $2,416.68 |
+| **Profit Factor** | 2.41 |
+| **Total Trades** | 158 |
+| **Win Rate** | 44.94% (71 wins, 87 losses) |
+| **Max Drawdown** | $177.10 (4.42%) ✅ |
+| **Expected Payoff** | $15.30/trade |
+| **Trades/Month** | ~12.5 |
+| **Monthly Profit** | $191.80 ($2K), $575 ($6K scaled) |
+| **Pass Timeline** | ~1.3 months (fastest!) |
+
+### Performance Highlights
+- ✅ **Safe Drawdown:** 4.42% stays well under 6% funded limit
+- ✅ **High Profit Factor:** 2.41 indicates strong edge
+- ✅ **Fastest Pass Time:** ~1.3 months to 10% profit target
+- ⚡ **Lower Win Rate, Higher Payoff:** Quality over quantity approach
+- 📈 **Consistent Monthly Returns:** $575/month on $6K account
+
+---
+
 ## 🚀 Major Changes
 
 ### V10 is a **Complete Redesign** - Not Built on V9
@@ -92,17 +144,35 @@ V10 now includes the full visual suite from V9:
 - Buy entry arrows marked on chart
 - Timestamp-based naming for clean history
 
-## 📈 Expected Performance
+## 📈 Actual Performance (Backtested)
 
-Based on backtest results with $2000 starting balance:
+Based on backtest results with $2,000 starting balance over 12.6 months:
 
-| Metric | V10 (Estimated) | V9 | V8 |
-|--------|----------------|-----|-----|
+| Metric | V10 (Actual) | V9 | V8 |
+|--------|-------------|-----|-----|
 | **Strategy Type** | Buy-Only HH TP | Dual-Direction Data-Driven | Aggressive Dual-Direction |
 | **TP Method** | Higher High Swing Target | Trailing Stop | Trailing Stop |
-| **Monthly Profit** | TBD (See backtests) | $220-240 | $196 |
-| **Win Rate** | TBD | 72-75% | ~70% |
-| **Risk Profile** | High reward per trade | Balanced | Aggressive |
+| **Net Profit** | $2,416.68 | ~$2,640-2,880 | $2,356.71 |
+| **Profit Factor** | 2.41 | ~1.7-1.8 | 1.68 |
+| **Win Rate** | 44.94% | 72-75% | ~70% |
+| **Max Drawdown** | 4.42% ✅ | <6% ✅ | 8.82% ⚠️ |
+| **Monthly Profit** | $575 ($6K) | $220-240 ($6K) | $196 ($6K) |
+| **Trades/Month** | ~12.5 | 20-23 | ~18 |
+| **Pass Timeline** | 1.3 months ⚡ | 2.5 months | 3 months |
+| **Risk Profile** | Medium-High reward per trade | Balanced | Aggressive |
+
+**V10 Advantages:**
+- 🔥 Fastest profit target achievement (1.3 months)
+- 💰 Highest monthly profit potential ($575 vs $220-240)
+- ✅ Safe drawdown control (4.42%)
+- 📊 Excellent profit factor (2.41)
+- 🎯 Higher payoff per trade ($15.30)
+
+**V10 Trade-offs:**
+- Lower win rate (45% vs 72-75% in V9)
+- Fewer trades per month (12.5 vs 20-23 in V9)
+- Larger stop losses required (7.54x ATR)
+- Works best in trending markets
 
 ## 🔄 Differences from V9
 
