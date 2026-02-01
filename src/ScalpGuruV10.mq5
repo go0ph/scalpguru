@@ -12,105 +12,83 @@ CTrade trade;
 //+------------------------------------------------------------------+
 //--- Trading Configuration
 input group "=== Trading Configuration ==="
-input int MagicNumber = 15140;              
-input double AccountBalance = 6000.0;       // Funded account size for risk calculations & limit percentages (set to your funded challenge size)
-input double RiskPerTradePercent = 1.0;     
-input bool EnableRiskPerTrade = true;       
-input double ManualLotSize = 0.01;          
-input double MaxLossPercent = 1;            
-input int MaxTradesPerDay = 4;              
-input bool EnableMaxTradesPerDay = true;    
+input int MagicNumber = 15140;                      // Unique identifier for V10 trades
+input double AccountBalance = 6000.0;               // Account size for risk calculations (set to your account balance)
+input double RiskPerTradePercent = 1.0;             // Risk per trade as % of account
+input bool EnableRiskPerTrade = true;               // Enable automatic risk-based lot sizing
+input double ManualLotSize = 0.01;                  // Fixed lot size (used if risk-based sizing disabled)
+input double MaxLossPercent = 1;                    // Maximum loss per trade as % of account
+input int MaxTradesPerDay = 4;                      // Maximum number of trades allowed per day
+input bool EnableMaxTradesPerDay = true;            // Enable daily trade limit    
 
 //--- Funded Account Protection
 input group "=== Funded Account Protection ==="
-input bool EnableFundedMode = true;          
-input double DailyLossLimitPercent = 2.5;    
-input double MaxDrawdownPercent = 5.5;       
-input double ProfitTargetPercent = 10.0;     
+input bool EnableFundedMode = true;                 // Enable funded account protection features
+input double DailyLossLimitPercent = 2.5;           // Daily loss limit as % of account (stops trading when hit)
+input double MaxDrawdownPercent = 5.5;              // Maximum drawdown as % of account (closes all positions)
+input double ProfitTargetPercent = 10.0;            // Profit target as % of account (notifications when reached)     
 
 //--- Strategy Parameters
 input group "=== Strategy Parameters ==="
-input int ATRPeriod = 133;                    // ATR period (optimized for backtest)
-input int KeltnerPeriod = 64;                // Keltner EMA period (optimized)
-input double KeltnerMultiplier = 3.75;       // Keltner band width (wider = more extreme entries)
-input double SL_ATRMultiplier = 7.54;        // ⚠️ VERY WIDE SL - High capital requirement!
-input double BreakevenBuffer = 2.46;         // Breakeven buffer in pips         
+input int ATRPeriod = 133;                          // ATR calculation period (optimized for volatility measurement)
+input int KeltnerPeriod = 64;                       // Keltner Channel EMA period (trend baseline)
+input double KeltnerMultiplier = 3.75;              // Keltner band width multiplier (wider = more extreme entries)
+input double SL_ATRMultiplier = 7.54;               // Stop loss distance (ATR multiplier) - ⚠️ VERY WIDE
+input double BreakevenBuffer = 2.46;                // Breakeven buffer in pips         
 
 //--- Profit Taking Parameters
 input group "=== Profit Taking ==="
-input bool EnablePartialProfit = true;       
-input double PartialProfitPercent = 50.0;    
+input bool EnablePartialProfit = true;              // Enable partial profit taking at halfway point
+input double PartialProfitPercent = 50.0;           // Percentage of position to close at partial (0-100)    
 
-//--- HH Swing High detection parameters
-input group "=== HH Swing High TP Setting ==="
-input int SwingLookback = 319;       // How far back (bars) to search for HH
-input int SwingWindow = 58;           // Width (bars on each side) for swing high
+//--- HH Swing High Detection Parameters
+input group "=== Higher High Target Settings ==="
+input int SwingLookback = 319;                      // Bars to search backward for swing highs
+input int SwingWindow = 58;                         // Bars on each side required for valid swing high
 
 //--- Entry Filters
 input group "=== Entry Filters ==="
-input bool EnableMomentumFilter = true;     
-input int RSIPeriod = 128;                   // RSI calculation period
-input int RSI_Oversold = 53;                // RSI oversold threshold for buys
-input int RSI_Overbought = 645;              // ⚠️ EFFECTIVELY DISABLED (>100) - RSI filter bypassed
-input bool EnableVolumeFilter = false;      
-input double VolumeMultiplier = 1.2;        
-input bool EnableCandleConfirmation = true; 
+input bool EnableMomentumFilter = true;             // Enable RSI momentum filter
+input int RSIPeriod = 128;                          // RSI calculation period
+input int RSI_Oversold = 53;                        // RSI oversold level for buy signals
+input int RSI_Overbought = 645;                     // RSI overbought level (>100 = disabled)
+input bool EnableVolumeFilter = false;              // Enable volume confirmation filter
+input double VolumeMultiplier = 1.2;                // Volume must exceed average by this multiplier
+input bool EnableCandleConfirmation = true;         // Enable bullish candle pattern confirmation 
 
-//--- V10: Data-Driven Enhancements
-input group "=== V10 Data-Driven Features ==="
-input bool EnableVolatilityAdjustedRisk = true;   
-input double VolLowRiskMultiplier = 6.36;          // ⚠️ EXTREME - Optimized for backtest! Use 1.2 for live
-input double VolHighRiskMultiplier = 7.28;         // ⚠️ EXTREME - Optimized for backtest! Use 0.8 for live
-input bool EnableVolatilityAdjustedStops = true;  
-input double HighVolStopMultiplier = 2.7;          // SL multiplier in high volatility         
-
-//--- Session Filter
-input group "=== Session Filter ==="
-input bool EnableSessionFilter = false;     
-input int SessionStartHour = 8;             
-input int SessionEndHour = 20;             
+//--- Volatility-Adjusted Risk Management
+input group "=== Volatility-Adjusted Risk ==="
+input bool EnableVolatilityAdjustedRisk = true;     // Adjust position size based on market volatility
+input double VolLowRiskMultiplier = 6.36;           // Risk multiplier in low volatility (⚠️ EXTREME - use 1.2 for live)
+input double VolHighRiskMultiplier = 7.28;          // Risk multiplier in high volatility (⚠️ EXTREME - use 0.8 for live)
+input bool EnableVolatilityAdjustedStops = true;    // Tighten stop loss in high volatility conditions
+input double HighVolStopMultiplier = 2.7;           // Stop loss multiplier for high volatility periods         
 
 //--- Day Filtering
 input group "=== Day Filtering ==="
-input bool EnableDaySkip = true;           
-input bool SkipMonday = false;              
-input bool SkipTuesday = false;             
-input bool SkipWednesday = false;           
-input bool SkipThursday = false;            
-input bool SkipFriday = true;               
-
-//--- Month Filtering
-input group "=== Month Filtering ==="
-input bool EnableMonthSkip = false;         
-input bool SkipJanuary = false;             
-input bool SkipFebruary = false;            
-input bool SkipMarch = false;               
-input bool SkipApril = false;               
-input bool SkipMay = false;                 
-input bool SkipJune = false;                
-input bool SkipJuly = false;                
-input bool SkipAugust = false;              
-input bool SkipSeptember = false;           
-input bool SkipOctober = false;             
-input bool SkipNovember = false;            
-input bool SkipDecember = false;            
+input bool EnableDaySkip = true;            // Enable day-of-week filtering
+input bool SkipMonday = false;              // Skip trading on Mondays
+input bool SkipTuesday = false;             // Skip trading on Tuesdays
+input bool SkipWednesday = false;           // Skip trading on Wednesdays
+input bool SkipThursday = false;            // Skip trading on Thursdays
+input bool SkipFriday = true;               // Skip trading on Fridays            
 
 //--- Visual Settings
 input group "=== Visual Settings ==="
-input bool ShowKeltnerOnChart = true;       
-input bool ShowInfoPanel = true;            
-input bool ShowTradeArrows = true;          
+input bool ShowKeltnerOnChart = true;               // Display Keltner Channels on chart
+input bool ShowInfoPanel = true;                    // Display information panel on chart
+input bool ShowTradeArrows = true;                  // Show arrows at trade entry points
 
-input color KeltnerUpperColor = clrCrimson;       
-input color KeltnerMiddleColor = clrDodgerBlue;   
-input color KeltnerLowerColor = clrLimeGreen;     
-input color KeltnerFillColor = clrLavender;       
-input color PanelBackgroundColor = clrBlack;      
-input color PanelTextColor = clrWhite;            
-input color PanelProfitColor = clrLime;           
-input color PanelLossColor = clrRed;              
-input color BuyArrowColor = clrLime;              
-input int KeltnerBarsToShow = 100;                
+input color KeltnerUpperColor = clrCrimson;         // Upper Keltner band color
+input color KeltnerMiddleColor = clrDodgerBlue;     // Middle Keltner line color
+input color KeltnerLowerColor = clrLimeGreen;       // Lower Keltner band color
+input color KeltnerFillColor = clrLavender;         // Keltner channel fill color
+input color PanelBackgroundColor = clrBlack;        // Info panel background color
+input color PanelTextColor = clrWhite;              // Info panel text color
+input color PanelProfitColor = clrLime;             // Profit display color
+input color PanelLossColor = clrRed;                // Loss display color
+input color BuyArrowColor = clrLime;                // Buy entry arrow color
+input int KeltnerBarsToShow = 100;                  // Number of bars to display Keltner bands                
 
 //--- Global Variables
 double atrValue, keltnerUpper, keltnerLower, keltnerMid;
@@ -600,20 +578,6 @@ double FindLastMajorHigh(int lookback, int swing_window)
 }
 
 //+------------------------------------------------------------------+
-//| Session Filter                                                   |
-//+------------------------------------------------------------------+
-bool CheckSessionFilter()
-{
-   if(!EnableSessionFilter) return true;
-   MqlDateTime dt; TimeToStruct(TimeTradeServer(), dt);
-   int currentHour = dt.hour;
-   if(SessionStartHour < SessionEndHour)
-      return (currentHour >= SessionStartHour && currentHour < SessionEndHour);
-   else
-      return (currentHour >= SessionStartHour || currentHour < SessionEndHour);
-}
-
-//+------------------------------------------------------------------+
 //| Funded Account Checks                                            |
 //+------------------------------------------------------------------+
 bool CheckFundedAccountLimits()
@@ -855,7 +819,7 @@ void OnTick()
 {
    datetime serverTime = TimeTradeServer();
    MqlDateTime timeStruct; TimeToStruct(serverTime, timeStruct);
-   int currentDay = timeStruct.day_of_week, currentMonth = timeStruct.mon;
+   int currentDay = timeStruct.day_of_week;
    MqlDateTime dt; TimeToStruct(serverTime, dt); dt.hour = 0; dt.min = 0; dt.sec = 0;
    datetime todayStart = StructToTime(dt);
 
@@ -876,22 +840,13 @@ void OnTick()
       ManageTrades(); return;
    }
 
-   bool skipCurrentMonth = false, skipCurrentDay = false;
-   if(EnableMonthSkip)
-   {
-      if((currentMonth == 1 && SkipJanuary) || (currentMonth == 2 && SkipFebruary) || (currentMonth == 3 && SkipMarch) ||
-         (currentMonth == 4 && SkipApril) || (currentMonth == 5 && SkipMay) || (currentMonth == 6 && SkipJune) ||
-         (currentMonth == 7 && SkipJuly) || (currentMonth == 8 && SkipAugust) || (currentMonth == 9 && SkipSeptember) ||
-         (currentMonth == 10 && SkipOctober) || (currentMonth == 11 && SkipNovember) || (currentMonth == 12 && SkipDecember))
-         skipCurrentMonth = true;
-   }
+   bool skipCurrentDay = false;
    if(EnableDaySkip)
    {
       if((currentDay == 1 && SkipMonday) || (currentDay == 2 && SkipTuesday) ||
          (currentDay == 3 && SkipWednesday) || (currentDay == 4 && SkipThursday) || (currentDay == 5 && SkipFriday))
          skipCurrentDay = true;
    }
-   bool isSkipped = skipCurrentMonth || skipCurrentDay;
 
    if(CopyBuffer(atrHandle, 0, 0, 3, atrBuffer) <= 0 || CopyClose(_Symbol, timeframe, 0, 5, closeBuffer) <= 0) return;
    atrValue = atrBuffer[0];
@@ -901,7 +856,7 @@ void OnTick()
    ArraySetAsSeries(highBuffer, true); ArraySetAsSeries(lowBuffer, true); ArraySetAsSeries(openBuffer, true);
    if(EnableMomentumFilter) CopyBuffer(rsiHandle, 0, 0, 3, rsiBuffer);
 
-   if(!isSkipped)
+   if(!skipCurrentDay)
    {
       if(CopyBuffer(maHandle, 0, 0, 3, maBuffer) <= 0) return;
       double ema = maBuffer[0];
@@ -913,14 +868,11 @@ void OnTick()
       // Entry conditions
       if(!inTrade && (!EnableMaxTradesPerDay || tradesToday < MaxTradesPerDay))
       {
-         if(CheckSessionFilter())
+         if(close2 < keltnerLower && currentPrice > keltnerLower)
          {
-            if(close2 < keltnerLower && currentPrice > keltnerLower)
+            if(CheckMomentumFilter() && CheckVolumeFilter() && CheckCandleConfirmation())
             {
-               if(CheckMomentumFilter() && CheckVolumeFilter() && CheckCandleConfirmation())
-               {
-                  OpenBuyTrade();
-               }
+               OpenBuyTrade();
             }
          }
       }
