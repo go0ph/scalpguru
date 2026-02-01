@@ -13,7 +13,7 @@ CTrade trade;
 //--- Trading Configuration
 input group "=== Trading Configuration ==="
 input int MagicNumber = 15140;              
-input double AccountBalance = 6000.0;       // Account size for risk calculations (set to your actual balance)
+input double AccountBalance = 6000.0;       // Funded account size for risk calculations & limit percentages (set to your funded challenge size)
 input double RiskPerTradePercent = 1.0;     
 input bool EnableRiskPerTrade = true;       
 input double ManualLotSize = 0.01;          
@@ -219,16 +219,19 @@ int OnInit()
 
    if(EnableFundedMode)
    {
-      // Use actual account balance for tracking, but AccountBalance parameter for risk calculations
-      double actualBalance = AccountInfoDouble(ACCOUNT_BALANCE);
-      overallStartBalance = actualBalance;
-      dailyStartBalance = actualBalance;
+      // AccountBalance input parameter = Funded account baseline size (user-configured)
+      // Used to calculate risk limits as percentages of this baseline
+      overallStartBalance = AccountBalance;
+      
+      // Track actual starting balance for daily monitoring
+      dailyStartBalance = AccountInfoDouble(ACCOUNT_BALANCE);
       dailyPnL = 0; dailyLimitHit = false; drawdownLimitHit = false; profitTargetReached = false;
       
-      // Log the starting balance for reference
-      Print("[FUNDED MODE] Starting balance tracked: $", DoubleToString(overallStartBalance, 2));
-      Print("[FUNDED MODE] Max allowed drawdown: ", DoubleToString(MaxDrawdownPercent, 2), "% ($", DoubleToString(overallStartBalance * MaxDrawdownPercent / 100, 2), ")");
-      Print("[FUNDED MODE] Daily loss limit: ", DoubleToString(DailyLossLimitPercent, 2), "% ($", DoubleToString(overallStartBalance * DailyLossLimitPercent / 100, 2), ")");
+      // Log the configuration
+      Print("[FUNDED MODE] Funded account size (baseline): $", DoubleToString(AccountBalance, 2));
+      Print("[FUNDED MODE] Current actual balance: $", DoubleToString(dailyStartBalance, 2));
+      Print("[FUNDED MODE] Max allowed drawdown: ", DoubleToString(MaxDrawdownPercent, 2), "% ($", DoubleToString(AccountBalance * MaxDrawdownPercent / 100, 2), ")");
+      Print("[FUNDED MODE] Daily loss limit: ", DoubleToString(DailyLossLimitPercent, 2), "% ($", DoubleToString(AccountBalance * DailyLossLimitPercent / 100, 2), ")");
    }
    
    // Create info panel
