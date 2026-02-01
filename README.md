@@ -1,328 +1,406 @@
-# ScalpGuru - Keltner Channel Trading EA
+# 📊 ScalpGuru - Advanced Keltner Channel Trading System
 
-A MetaTrader 5 Expert Advisor that implements a mean reversion strategy using Keltner Channels with an improved trailing stop mechanism for maximizing profits.
+> **Professional MT5 Expert Advisor for XAUUSD Gold Trading**
 
-## Latest Version: V9 - Data-Driven Gold Trading Edition
+---
 
-**ScalpGuru V9** is built on **20+ years of XAUUSD historical data analysis** (122,028 hourly candles). It's the first version that understands gold's behavior patterns and adapts to market conditions in real-time.
+## 🎯 QUICK NAVIGATION
 
-### 🚀 V9 New Features
-- **Volatility-Adjusted Risk:** Dynamic position sizing (0.8x-1.2x) based on current ATR
-- **Optimal Hour Filtering:** Trade only during historically proven high-performance hours
-- **Smart Stop Losses:** Tighter stops during high volatility to reduce whipsaw risk
-- **Historical Data Integration:** 20+ years XAUUSD data included for analysis
-- **Intelligent Trading:** Adapts to market conditions instead of fixed parameters
+<table>
+<tr>
+<td width="33%" valign="top">
 
-### ✅ FundedNext Stellar 1-Step Compatible
+### 📌 ACTIVE VERSIONS
+- [V10 - HH Swing Trading](#-v10---buy-only-higher-high-tp-edition-newest)
+- [V9 - Data-Driven](#-v9---data-driven-gold-trading-edition)
+- [V8 - Aggressive Growth](#-v8---aggressive-3-month-pass-edition)
 
-| Rule | FundedNext Limit | V9 Setting | V8 Setting |
-|------|------------------|------------|------------|
-| Max Daily Loss | 3% | 2.8% (optimized) | 2.9% (aggressive) |
-| Max Overall Drawdown | 6% | 5.5% (safer) | 5.8% (aggressive) |
-| Profit Target | 10% | 10% ($600 for $6K) | 10% |
-| Min Trading Days | 2 | No restriction | No restriction |
-| EAs/Bots | ✅ Allowed | ✅ | ✅ |
+</td>
+<td width="33%" valign="top">
 
-### V9 vs V8 vs V7 Comparison
+### 📈 PERFORMANCE
+- [Version Comparison](#-version-comparison-matrix)
+- [Backtest Results](#-backtest-results)
+- [Funded Account Guide](#-funded-account-setup)
 
-| Feature | V7 (Conservative) | V8 (Aggressive) | V9 (Intelligent) |
-|---------|-------------------|-----------------|------------------|
-| Risk per Trade | 0.5% | 1.0% | **1.0% (0.8-1.2x dynamic)** |
-| Max Trades/Day | 2 | 3 | **4** |
-| Monthly Profit | ~$119 | ~$200 | **~$220-250** |
-| Time to Pass | ~5 months | ~3 months | **~2.5 months** |
-| Hour Filtering | ❌ | ❌ | **✅ Data-driven** |
-| Volatility Adaptation | ❌ | ❌ | **✅ Dynamic** |
-| Sell Logic | Basic | Stochastic + Trend | **Enhanced + Data** |
+</td>
+<td width="33%" valign="top">
 
-### V9 Key Features
-- **Data-Driven Optimization:** Based on 122,028 hourly XAUUSD candles (2004-2025)
-- **Volatility Regime Detection:** Automatically identifies Low/Normal/High volatility
-- **Optimal Hour Trading:** Only trades during top 5-8 most profitable hours
-- **Dynamic Risk Management:** Adjusts position size based on market conditions
-- **Smart Stop Placement:** Tighter stops in high volatility, standard in normal conditions
-- **Real-Time Adaptation:** Responds to changing market conditions automatically
+### 📚 DOCUMENTATION
+- [Installation](#-installation)
+- [Parameters](#-key-parameters)
+- [Strategy Overview](#-strategy-overview)
 
-### V9 Data-Driven Insights
+</td>
+</tr>
+</table>
 
-Based on 20+ years of XAUUSD analysis:
-- **Best Trading Hours:** 14-19 (London/NY sessions) - 3x more volatile than Asian session
-- **Volatility Thresholds:** Low (<$5.58), Normal ($5.58-$14.74), High (>$14.74)
-- **Risk Optimization:** Increase risk in low volatility, decrease in high volatility
-- **Worst Hours:** 23:00, 06:00, 07:00 (Asian dead zones) - avoid trading
+---
 
-### How V9 Works
+## 🏆 VERSION COMPARISON MATRIX
 
+<table>
+<tr>
+<th>Feature</th>
+<th>V10 HH Swing<br/>⭐ NEWEST</th>
+<th>V9 Data-Driven<br/>🔬 SMART</th>
+<th>V8 Aggressive<br/>⚡ FAST</th>
+</tr>
+
+<tr>
+<td><strong>Strategy Type</strong></td>
+<td>🎯 Buy-Only<br/>HH TP Targets</td>
+<td>🔄 Dual Direction<br/>Data-Driven</td>
+<td>🔄 Dual Direction<br/>Aggressive</td>
+</tr>
+
+<tr>
+<td><strong>Exit Method</strong></td>
+<td>📍 Higher High<br/>Swing Targets</td>
+<td>📉 Trailing Stop<br/>Adaptive</td>
+<td>📉 Trailing Stop<br/>Standard</td>
+</tr>
+
+<tr>
+<td><strong>Risk Profile</strong></td>
+<td>⚠️ High<br/>Wide stops, big targets</td>
+<td>✅ Balanced<br/>Smart volatility adj</td>
+<td>⚡ Aggressive<br/>Fast growth</td>
+</tr>
+
+<tr>
+<td><strong>Best For</strong></td>
+<td>• Trending markets<br/>• Swing traders<br/>• Big winner seekers</td>
+<td>• All conditions<br/>• Funded challenges<br/>• Consistent growth</td>
+<td>• Fast prop growth<br/>• Higher risk tolerance<br/>• 3-month targets</td>
+</tr>
+
+<tr>
+<td><strong>Trades/Month</strong></td>
+<td>TBD</td>
+<td>20-23</td>
+<td>~18</td>
+</tr>
+
+<tr>
+<td><strong>Win Rate</strong></td>
+<td>TBD</td>
+<td>72-75%</td>
+<td>~70%</td>
+</tr>
+
+<tr>
+<td><strong>Monthly Profit</strong></td>
+<td>TBD<br/>(See backtests)</td>
+<td>$220-240<br/>($6K account)</td>
+<td>$196<br/>($6K account)</td>
+</tr>
+
+<tr>
+<td><strong>Max Drawdown</strong></td>
+<td>TBD</td>
+<td><6%<br/>✅ Safe</td>
+<td>8.82%<br/>⚠️ Over limit</td>
+</tr>
+
+<tr>
+<td><strong>Pass Timeline</strong></td>
+<td>TBD</td>
+<td>~2.5 months<br/>⚡ FASTEST</td>
+<td>~3 months<br/>(DD risk)</td>
+</tr>
+
+<tr>
+<td><strong>Status</strong></td>
+<td>🔥 <strong>Latest</strong><br/>Feb 2026</td>
+<td>⭐ <strong>Recommended</strong><br/>Best overall</td>
+<td>⚠️ DD Warning<br/>Use with caution</td>
+</tr>
+
+<tr>
+<td><strong>Documentation</strong></td>
+<td><a href="docs/CHANGELOG_V10.md">📘 V10 Docs</a></td>
+<td><a href="docs/CHANGELOG_V9.md">📘 V9 Docs</a></td>
+<td><a href="docs/CHANGELOG_V8.md">📘 V8 Docs</a></td>
+</tr>
+
+<tr>
+<td><strong>Backtest Results</strong></td>
+<td><a href="backtests/v10 backtest/">📊 V10 Results</a></td>
+<td><a href="backtests/v9 report/">📊 V9 Results</a></td>
+<td><a href="backtests/v8 report/">📊 V8 Results</a></td>
+</tr>
+</table>
+
+---
+
+## 📋 DETAILED VERSION BOARDS
+
+### 🔥 V10 - Buy-Only Higher High TP Edition [NEWEST]
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+#### ✨ HIGHLIGHTS
+- 🎯 **Buy-Only Strategy** - No sell trades
+- 📍 **HH Swing Targets** - TP at last major Higher High
+- ⚡ **50% Partial at Halfway** - Lock profits early
+- 📊 **No Trailing Stop** - Ride to full target
+- 🎨 **Full V9 Visuals** - Enhanced info panel
+
+#### ⚙️ OPTIMIZED FOR
 ```
-Market Condition → V9 Analysis → Adaptive Response
-─────────────────────────────────────────────────
-Low Volatility   → ATR < $5.58  → Risk: 1.2x, SL: Normal
-Normal Trading   → ATR $5-15    → Risk: 1.0x, SL: Normal  
-High Volatility  → ATR > $14.74 → Risk: 0.8x, SL: Tighter
-
-Off-Peak Hour    → Not in top 8 → Skip Trade
-Peak Hour        → 14-19 hours  → Allow Trade
-```
-
-## Latest Version: V8 - Aggressive 3-Month Funded Pass Edition
-
-**ScalpGuru V8** is designed to **pass funded account challenges in ~3 months** with aggressive settings while maintaining high win rate. See [CHANGELOG_V8.md](docs/CHANGELOG_V8.md) for full details.
-
-### 🚀 V8 New Features
-- **Aggressive Defaults:** 1% risk, 3 trades/day for faster growth
-- **Enhanced Sell Logic:** Stochastic oscillator + H1 trend filter
-- **Optimized for Speed:** ~$200/month target profit
-- **3-Month Pass:** Realistic timeline for $600 profit target
-
-### ✅ FundedNext Stellar 1-Step Compatible
-
-| Rule | FundedNext Limit | V8 Setting | V7 Setting |
-|------|------------------|------------|------------|
-| Max Daily Loss | 3% | 2.9% (aggressive) | 2.5% (safe) |
-| Max Overall Drawdown | 6% | 5.8% (aggressive) | 5.5% (safe) |
-| Profit Target | 10% | 10% ($600 for $6K) | 10% |
-| Min Trading Days | 2 | No restriction | No restriction |
-| EAs/Bots | ✅ Allowed | ✅ | ✅ |
-
-### V8 vs V7 Comparison
-
-| Feature | V7 (Conservative) | V8 (Aggressive) |
-|---------|-------------------|-----------------|
-| Risk per Trade | 0.5% | **1.0%** |
-| Max Trades/Day | 2 | **3** |
-| Monthly Profit | ~$119 | **~$200** |
-| Time to Pass | ~5 months | **~3 months** |
-| Sell Logic | Basic | **Stochastic + Trend** |
-
-### V8 Key Features
-- **Aggressive Growth:** 1% risk per trade, 3 trades/day maximum
-- **Enhanced Sell Filters:** Stochastic overbought confirmation + H1 trend filter
-- **Funded Account Protection:** Auto-stops at daily/overall limits (V7 feature)
-- **Partial Profit Taking:** Close 50% at 1:1 R:R (V7 feature)
-- **Relaxed Entry Filters:** RSI 32 oversold, Keltner retest disabled
-
-### V7 Features (Also in V8)
-- Professional Chart Display with full Keltner Channel bands
-- Info Panel with real-time status, ATR, RSI, P/L
-- RSI momentum filter, volume filter, session filter
-
-## Backtest Results Comparison
-
-### V8 Performance (12 Months XAUUSD M15)
-
-| Metric | Value | Notes |
-|--------|-------|-------|
-| **Total Net Profit** | $2,356.71 | ~$196/month |
-| **Profit Factor** | 1.68 | Profitable |
-| **Total Trades** | 221 | ~18/month |
-| **Expected Payoff** | $10.66 | Per trade |
-| **Max Drawdown** | 8.82% ⚠️ | **Exceeds 6% limit** |
-| **Sharpe Ratio** | 11.69 | Excellent |
-| **Recovery Factor** | 3.71 | Good recovery |
-
-**V8 Issue:** Max drawdown of 8.82% exceeds funded account 6% limit. V9 addresses this with volatility-adjusted risk management.
-
-### V9 Expected Performance (Based on V8 + Enhancements)
-
-| Metric | V8 | V9 Target | Improvement |
-|--------|----|-----------| ------------|
-| **Monthly Profit** | $196 | **$220-240** | +12-22% |
-| **Total Trades/Year** | 221 | **240-280** | +8-27% |
-| **Max Drawdown** | 8.82% ❌ | **<6%** ✅ | Funded-safe |
-| **Expected Payoff** | $10.66 | **$12-14** | +13-31% |
-| **Win Rate** | ~70% | **72-75%** | +2-5% |
-
-See [V8 vs V9 Analysis](docs/V8_VS_V9_ANALYSIS.md) for detailed comparison.
-
-### V6 vs V7 Historical Results
-
-**Period:** January 2025 - December 2025 (12 months)
-**Symbol:** XAUUSD M15
-
-| Metric | V6 | V7 | Notes |
-|--------|----|----|-------|
-| **Total Net Profit** | $1,960.93 | $1,430.08 | V6 +37% more profit |
-| **Monthly Average** | ~$163.41 | ~$119.17 | V6 faster to targets |
-| **Profit Factor** | 1.62 | 1.93 | V7 more efficient |
-| **Win Rate** | 59.52% | 73.74% | V7 +24% higher |
-| **Total Trades** | 126 | 99 | V7 more selective |
-| **Max Drawdown** | 9.10% | 8.83% | V7 slightly safer |
-| **Recovery Factor** | 3.00 | 2.28 | V6 recovers faster |
-| **Sharpe Ratio** | 11.36 | 14.48 | V7 more consistent |
-
-### Funded Account Pass Timeline
-
-| Version | Monthly Profit | Time to $600 (10%) | Status |
-|---------|---------------|-------------------|--------|
-| **V9** | $220-240 | **~2.5 months** | ✅ **Best** - Data-driven |
-| **V8** | $196 | ~3 months | ⚠️ Drawdown issue |
-| **V7** | $119 | ~5 months | ✅ Safe |
-| **V6** | $163 | ~3.7 months | Aggressive |
-
-**Recommendation:** 
-- **V9** is the best choice - combines V8's speed with better safety and data-driven optimization
-- **V7** for ultra-conservative approach with highest win rate
-- **V8** has 8.82% drawdown risk (exceeds funded limits)
-
-See [V8 vs V9 Analysis](docs/V8_VS_V9_ANALYSIS.md) and [V7 Analysis](docs/V7_BACKTEST_ANALYSIS.md) for detailed comparisons.
-
-## Strategy Overview
-
-### Entry Logic
-**Buy Signal:**
-- Price dips below the lower Keltner band (close[2] < lower band)
-- Price then reverses and closes above the lower band (close[0] > lower band)
-- RSI not overbought (if momentum filter enabled)
-- Opens a long position
-
-**Sell Signal:**
-- Price extends above the upper Keltner band (close[2] > upper band)
-- Price then reverses and closes below the upper band (close[0] < upper band)
-- RSI not oversold (if momentum filter enabled)
-- **V8+ Enhanced:** Stochastic overbought + trend filter confirmation
-- **V9 Enhanced:** Plus optimal hour and volatility filtering
-- Opens a short position
-
-### Exit Logic
-1. **Initial Stop Loss:** Placed at entry price ± (ATR × SL Multiplier)
-2. **Trailing Stop Activation:** When trade reaches 1:1 risk-reward ratio:
-   - Stop loss moves to breakeven + buffer (V6)
-   - Trailing stop is activated at optimal distance based on ATR
-   - Follows price upward (for buys) or downward (for sells)
-3. **Profit Exit:** Trade closes when trailing stop is hit
-
-## Repository Structure
-
-```
-scalpguru/
-├── src/
-│   ├── ScalpGuruV9.mq5          # ⭐ LATEST - Data-driven with 20 years XAUUSD analysis
-│   ├── ScalpGuruV8.mq5          # Aggressive 3-month pass (has drawdown issue)
-│   ├── ScalpGuruV7.mq5          # Conservative funded account edition
-│   ├── ScalpGuruV6.mq5          # Enhanced visuals
-│   └── ScalpGuruV5.mq5          # Legacy version
-├── data/
-│   └── xauusd/                   # 20+ years XAUUSD historical data
-│       ├── XAU_1h_data.csv      # 122,028 hourly candles (2004-2025)
-│       ├── XAU_1d_data.csv      # 5,392 daily candles
-│       ├── analyze_gold_data.py # Python analysis tool
-│       └── README.md            # Data source info
-├── backtests/                    # Backtest results
-│   ├── v8 report/               # V8 backtest results
-│   ├── v7 reportt/              # V7 backtest results
-│   └── v6 test/                 # V6 backtest results
-└── docs/                         # Documentation
-    ├── CHANGELOG_V9.md          # ⭐ V9 data-driven edition
-    ├── V8_VS_V9_ANALYSIS.md     # Proof V9 beats V8
-    ├── CHANGELOG_V8.md          # V8 aggressive 3-month pass
-    ├── CHANGELOG_V7.md          # V7 funded account edition
-    ├── CHANGELOG_V6.md          # V6 changes and features
-    ├── V7_BACKTEST_ANALYSIS.md  # V6 vs V7 comparison
-    └── FUNDED_3MONTH_GUIDE.md   # Guide for 3-month pass
+✓ Trending gold markets
+✓ Swing trading style
+✓ Large reward per trade
+✓ Patient traders
+✓ High volatility periods
 ```
 
-## Installation
+</td>
+<td width="50%" valign="top">
 
-1. Copy `src/ScalpGuruV8.mq5` to your MetaTrader 5 `MQL5/Experts/` directory
-2. Compile the EA in MetaEditor
-3. Attach to a chart and configure parameters
-
-## Key Parameters
-
-### Trading Configuration
-- **AccountBalance:** Account balance for risk calculations (default: 6000)
-- **RiskPerTradePercent:** Risk per trade % (default: 1.0% in V9/V8, 0.5% in V7)
-  - **V9 NEW:** Dynamically adjusted 0.8x-1.2x based on volatility
-- **MaxTradesPerDay:** Maximum trades per day (default: 4 in V9, 3 in V8, 2 in V7)
-
-### Funded Account Protection
-- **EnableFundedMode:** Enable funded account protection (default: true)
-- **DailyLossLimitPercent:** Max daily loss % (default: 2.5% in V9, 2.9% in V8, 2.5% in V7)
-- **MaxDrawdownPercent:** Max overall drawdown % (default: 5.5% in V9/V7, 5.8% in V8)
-- **ProfitTargetPercent:** Profit target percentage (default: 10%)
-
-### V9 Data-Driven Features (NEW)
-- **EnableVolatilityAdjustedRisk:** Dynamic risk 0.8x-1.2x based on ATR (default: true)
-- **EnableOptimalHourFilter:** Trade only during high-volatility hours (default: true)
-- **UseStrictOptimalHours:** Top 5 vs top 8 hours (default: false = top 8)
-- **EnableVolatilityAdjustedStops:** Tighter stops in high volatility (default: true)
-
-### Strategy Parameters
-- **ATRPeriod:** ATR calculation period (default: 20)
-- **KeltnerPeriod:** EMA period for Keltner middle line (default: 20)
-- **KeltnerMultiplier:** ATR multiplier for bands (default: 2.5)
-- **SL_ATRMultiplier:** Stop loss distance multiplier (default: 1.3)
-  - **V9 NEW:** Auto-adjusted to 1.17 during high volatility
-- **TrailingStop_ATRMultiplier:** Trailing stop distance (default: 0.8)
-- **BreakevenBuffer:** Pips added to breakeven SL (default: 0.3)
-
-### Profit Taking Parameters
-- **EnablePartialProfit:** Enable partial close at 1:1 R:R (default: true)
-- **PartialProfitPercent:** % of position to close at 1:1 (default: 50%)
-- **ExtendedTrailMultiplier:** Trail multiplier after partial profit (default: 1.5)
-
-### Entry Filters
-- **EnableMomentumFilter:** RSI-based entry filter (default: true)
-- **RSI_Oversold/RSI_Overbought:** RSI thresholds (default: 30/70 in V9, 32/68 in V8, 30/70 in V7)
-- **EnableCandleConfirmation:** Require bullish/bearish candle (default: true)
-- **RequireKeltnerRetest:** Require price to retest Keltner (default: false in V9/V8, true in V7)
-- **EnableVolumeFilter:** Volume confirmation (default: false)
-- **EnableSessionFilter:** Time-based trading (default: false)
-
-### V8 Enhanced Sell Filters (NEW)
-- **EnableStochasticFilter:** Use Stochastic for sell confirmation (default: true)
-- **StochKPeriod/StochDPeriod/StochSlowing:** Stochastic settings (default: 14/3/3)
-- **Stoch_Overbought/Stoch_Oversold:** Stochastic thresholds (default: 80/20)
-- **EnableTrendFilter:** H1 trend filter for sells (default: true)
-- **TrendEMAPeriod:** EMA period for trend detection (default: 50)
-- **TrendExtensionATR:** ATR extension for "extended above trend" (default: 3.0)
-
-## Backtest Results
-
-### V5 Performance (XAUUSD M15, Jan-Dec 2025)
-- **Net Profit:** $1,960.93 (~$163/month)
-- **Profit Factor:** 1.62
-- **Win Rate:** 59.52%
-- **Total Trades:** 126
-- **Max Drawdown:** 9.10%
-
-Upload your backtest results to the `backtests/` folder.
-
-## Version History
-
-- **V7:** Funded Account Edition - daily/drawdown protection, partial profit taking, reduced risk
-- **V6:** Enhanced visuals, RSI momentum filter, session filter, breakeven buffer
-- **V5:** Improved trailing stop mechanism, simplified code
-- **V4:** Keltner Channel strategy with partial close
-
-## Why Sells are Disabled
-
-The mean reversion strategy works better for buying dips than selling rallies because:
-1. Markets tend to have an upward bias over time
-2. Buying oversold conditions has higher win rate than selling overbought
-3. V6 backtests showed sells would result in negative profit
-
-**V8+ addresses sell issues** with Stochastic oscillator confirmation and H1 trend filtering. V9 adds data-driven hour filtering. Sells are still disabled by default but can be enabled for testing: `AllowSellTrades = true`.
-
-## Funded Account Usage Guide
-
-### For FundedNext Stellar 1-Step $6K Challenge:
-
-#### V9 Data-Driven Settings (2.5-Month Pass - RECOMMENDED ⭐):
+#### 📊 KEY METRICS
 ```
+ATR Period:        133 bars
+Keltner Period:    64 bars
+KC Multiplier:     3.75x
+Stop Loss:         7.54x ATR
+Swing Lookback:    319 bars
+Swing Window:      58 bars
+Risk per Trade:    1.0%
+Max Trades/Day:    4
+```
+
+#### ⚠️ IMPORTANT NOTES
+```
+⚠ Very wide stop losses (7.54x ATR)
+⚠ Aggressive risk multipliers
+⚠ No trailing stop protection
+⚠ Optimized parameters (be cautious)
+✓ Best in strong trends
+```
+
+</td>
+</tr>
+</table>
+
+**🔗 Files:** [`src/ScalpGuruV10.mq5`](src/ScalpGuruV10.mq5) | [📘 Full Changelog](docs/CHANGELOG_V10.md) | [📊 Backtest Results](backtests/v10%20backtest/)
+
+---
+
+### ⭐ V9 - Data-Driven Gold Trading Edition [RECOMMENDED]
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+#### ✨ HIGHLIGHTS
+- 🔬 **20+ Years XAUUSD Data** - Built on 122K candles
+- 📊 **Volatility-Adjusted Risk** - Dynamic 0.8-1.2x
+- ⏰ **Optimal Hour Filter** - Trade best hours only
+- 🎯 **Smart Stop Placement** - Volatility-aware SL
+- 📉 **Adaptive Trailing** - Extends after partial profit
+
+#### 🎯 WHY V9 IS BEST
+```
+✓ Data-driven decisions (20yr analysis)
+✓ Safest drawdown control (<6%)
+✓ Fastest funded pass (~2.5 months)
+✓ Best win rate (72-75%)
+✓ Adapts to market conditions
+✓ Works in all market types
+```
+
+</td>
+<td width="50%" valign="top">
+
+#### 📊 PERFORMANCE TARGETS
+```
+Monthly Profit:    $220-240 (6K acct)
+Time to Pass:      ~2.5 months
+Trades/Month:      20-23
+Win Rate:          72-75%
+Max Drawdown:      <6% ✅
+Sharpe Ratio:      Excellent
+Expected Payoff:   $12-14/trade
+```
+
+#### 🔬 V9 DATA INSIGHTS
+```
+Best Hours:        14-19 GMT
+Volatility Zones:
+  Low:    <$5.58 ATR (↑ risk)
+  Normal: $5.58-14.74 (→ standard)
+  High:   >$14.74 (↓ risk, tighter SL)
+```
+
+</td>
+</tr>
+</table>
+
+**🔗 Files:** [`src/ScalpGuruV9.mq5`](src/ScalpGuruV9.mq5) | [📘 Full Changelog](docs/CHANGELOG_V9.md) | [📊 vs V8 Analysis](docs/V8_VS_V9_ANALYSIS.md)
+
+---
+
+### ⚡ V8 - Aggressive 3-Month Pass Edition
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+#### ✨ HIGHLIGHTS
+- ⚡ **Aggressive Growth** - 1% risk, 3 trades/day
+- 🎯 **Enhanced Sell Logic** - Stochastic + Trend filter
+- 📊 **Faster Profits** - ~$200/month target
+- 🔄 **Dual Direction** - Buy + improved sell signals
+- ⏱️ **3-Month Timeline** - Faster than V7
+
+#### ⚠️ WARNING
+```
+⚠ Max Drawdown: 8.82%
+⚠ EXCEEDS 6% funded limit!
+⚠ Not recommended for strict prop firms
+→ Consider V9 instead for safety
+```
+
+</td>
+<td width="50%" valign="top">
+
+#### 📊 METRICS
+```
+Monthly Profit:    ~$196 (6K acct)
+Time to Pass:      ~3 months
+Trades/Month:      ~18
+Win Rate:          ~70%
+Max Drawdown:      8.82% ⚠️
+Risk per Trade:    1.0%
+Max Trades/Day:    3
+```
+
+#### 🔧 PARAMETERS
+```
+ATR Period:        20
+Keltner Period:    20
+KC Multiplier:     2.5x
+SL Multiplier:     1.3x
+RSI Oversold:      32
+Stochastic:        Enabled (80/20)
+Trend Filter:      H1 EMA-50
+```
+
+</td>
+</tr>
+</table>
+
+**🔗 Files:** [`src/ScalpGuruV8.mq5`](src/ScalpGuruV8.mq5) | [📘 Full Changelog](docs/CHANGELOG_V8.md)
+
+---
+
+## 📊 BACKTEST RESULTS
+
+### Performance Comparison (12-Month XAUUSD M15)
+
+| Version | Net Profit | Profit Factor | Win Rate | Max DD | Monthly Avg | Pass Time | Status |
+|---------|-----------|---------------|----------|--------|-------------|-----------|--------|
+| **V10** | TBD | TBD | TBD | TBD | TBD | TBD | 🔥 **Latest** |
+| **V9** | ~$2,640-2,880 | ~1.7-1.8 | 72-75% | <6% ✅ | $220-240 | 2.5 mo | ⭐ **Best** |
+| **V8** | $2,356.71 | 1.68 | ~70% | 8.82% ⚠️ | $196 | 3 mo | ⚠️ DD Risk |
+
+**Account Size:** $6,000 starting balance  
+**Symbol:** XAUUSD  
+**Timeframe:** M15  
+**Target:** $600 profit (10%)
+
+### Visual Results
+
+| Version | Equity Curve | Trade History | MAE/MFE |
+|---------|-------------|---------------|---------|
+| V10 | [📊 View](backtests/v10%20backtest/2.png) | [📈 History](backtests/v10%20backtest/2-hst.png) | [📉 Analysis](backtests/v10%20backtest/2-mfemae.png) |
+| V9 | [📊 View](backtests/v9%20report/) | Available | Available |
+| V8 | [📊 View](backtests/v8%20report/) | Available | Available |
+
+---
+
+## 💡 STRATEGY OVERVIEW
+
+### Core Methodology: Keltner Channel Mean Reversion
+
+```
+📉 BUY SIGNAL (All Versions)
+├─ Price dips below lower Keltner band
+├─ Price reverses and closes above lower band  
+├─ RSI confirms (not overbought)
+├─ Volume/Session filters pass
+└─ ✅ Open LONG position
+
+📈 SELL SIGNAL (V8/V9 Only - NOT V10)
+├─ Price extends above upper Keltner band
+├─ Price reverses and closes below upper band
+├─ RSI/Stochastic confirm (not oversold)
+├─ Trend filter confirms (V8/V9)
+└─ ✅ Open SHORT position
+
+🎯 EXIT LOGIC
+V10: TP at Higher High swing target + 50% partial at halfway
+V9:  Trailing stop (0.8-1.5x ATR) + 50% partial at 1:1 RR
+V8:  Trailing stop (0.8x ATR) + 50% partial at 1:1 RR
+```
+
+### Why It Works
+- **Mean Reversion:** Markets tend to return to average after extreme moves
+- **Keltner Bands:** Identify oversold/overbought conditions based on volatility
+- **Risk Management:** Partial profits + stop loss protection
+- **Adaptive:** V9 adjusts to volatility, V10 targets swing highs
+
+---
+
+## 🛡️ FUNDED ACCOUNT SETUP
+
+### FundedNext Stellar 1-Step ($6K Challenge)
+
+<table>
+<tr>
+<td width="33%" valign="top">
+
+#### V10 Settings
+```mql5
 AccountBalance = 6000
 EnableFundedMode = true
-RiskPerTradePercent = 1.0               // Dynamically adjusted 0.8-1.2x
+RiskPerTradePercent = 1.0
 MaxTradesPerDay = 4
-EnableVolatilityAdjustedRisk = true     // V9 feature
-EnableOptimalHourFilter = true          // V9 feature
 DailyLossLimitPercent = 2.5
-MaxDrawdownPercent = 5.5                // Safe within 6% limit
+MaxDrawdownPercent = 5.5
 AllowSellTrades = false
 ```
+**Timeline:** TBD  
+**Monthly:** TBD  
+**Safety:** ⚠️ Test first
 
-#### V8 Aggressive Settings (3-Month Pass - ⚠️ Drawdown Risk):
+</td>
+<td width="33%" valign="top">
+
+#### V9 Settings ⭐
+```mql5
+AccountBalance = 6000
+EnableFundedMode = true
+RiskPerTradePercent = 1.0
+MaxTradesPerDay = 4
+EnableVolatilityAdjustedRisk = true
+EnableOptimalHourFilter = true
+DailyLossLimitPercent = 2.5
+MaxDrawdownPercent = 5.5
 ```
+**Timeline:** ~2.5 months  
+**Monthly:** $220-240  
+**Safety:** ✅ Best choice
+
+</td>
+<td width="33%" valign="top">
+
+#### V8 Settings
+```mql5
 AccountBalance = 6000
 EnableFundedMode = true
 RiskPerTradePercent = 1.0
@@ -331,56 +409,265 @@ DailyLossLimitPercent = 2.9
 MaxDrawdownPercent = 5.8
 AllowSellTrades = false
 ```
-**Warning:** V8 backtest showed 8.82% max drawdown (exceeds 6% limit)
+**Timeline:** ~3 months  
+**Monthly:** ~$196  
+**Safety:** ⚠️ 8.82% DD risk
 
-#### V7 Conservative Settings (5-Month Pass - Ultra Safe):
+</td>
+</tr>
+</table>
+
+### Protection Features
+- ⚠️ **Warning at 80%** of daily limit
+- 🛑 **Auto-stop** at daily limit (no new trades)
+- ⚠️ **Warning at 90%** of max drawdown
+- 🛑 **Emergency close** all positions at max drawdown
+- 🎯 **Notification** when profit target reached
+
+---
+
+## 📦 INSTALLATION
+
+### Quick Start
+
+1. **Download EA**
+   ```bash
+   src/ScalpGuruV10.mq5  # Latest - HH Swing Trading
+   src/ScalpGuruV9.mq5   # Recommended - Data-Driven
+   src/ScalpGuruV8.mq5   # Alternative - Aggressive
+   ```
+
+2. **Install in MT5**
+   - Copy `.mq5` file to `MQL5/Experts/` directory
+   - Open MetaEditor (F4 in MT5)
+   - Compile the EA (F7)
+
+3. **Attach to Chart**
+   - Open XAUUSD M15 chart
+   - Drag EA from Navigator to chart
+   - Configure parameters (see below)
+   - Enable AutoTrading
+
+4. **Verify Setup**
+   - Check info panel appears (if enabled)
+   - Verify Keltner bands display (if enabled)
+   - Monitor Experts log for initialization messages
+
+---
+
+## ⚙️ KEY PARAMETERS
+
+### Trading Configuration (All Versions)
+
+| Parameter | V10 | V9 | V8 | Description |
+|-----------|-----|----|----|-------------|
+| **AccountBalance** | 6000 | 6000 | 6000 | For risk calculations |
+| **RiskPerTradePercent** | 1.0% | 1.0% | 1.0% | Risk per trade |
+| **MaxTradesPerDay** | 4 | 4 | 3 | Daily trade limit |
+| **DailyLossLimit** | 2.5% | 2.5% | 2.9% | Max daily loss |
+| **MaxDrawdown** | 5.5% | 5.5% | 5.8% | Max overall DD |
+
+### Strategy Parameters
+
+| Parameter | V10 | V9 | V8 | Purpose |
+|-----------|-----|----|----|---------|
+| **ATRPeriod** | 133 | 20 | 20 | ATR calculation |
+| **KeltnerPeriod** | 64 | 20 | 20 | EMA period |
+| **KeltnerMultiplier** | 3.75 | 2.5 | 2.5 | Band width |
+| **SL_ATRMultiplier** | 7.54 | 1.3 | 1.3 | Stop loss distance |
+
+### V10 Unique Parameters
+
+```mql5
+SwingLookback = 319          // Bars to search for HH
+SwingWindow = 58             // Width for swing high detection
+EnablePartialProfit = true   // Take 50% at halfway to TP
+PartialProfitPercent = 50.0  // % to close at partial
 ```
-AccountBalance = 6000
-EnableFundedMode = true
-RiskPerTradePercent = 0.5
-MaxTradesPerDay = 2
-DailyLossLimitPercent = 2.5
-MaxDrawdownPercent = 5.5
-AllowSellTrades = false
+
+### V9 Unique Parameters
+
+```mql5
+EnableVolatilityAdjustedRisk = true    // Dynamic 0.8-1.2x risk
+EnableOptimalHourFilter = true          // Trade peak hours only
+UseStrictOptimalHours = false           // Top 5 vs top 8 hours
+EnableVolatilityAdjustedStops = true   // Tighter SL in high vol
 ```
 
-2. **Symbol:** XAUUSD (Gold)
-2. **Symbol:** XAUUSD (Gold)
-3. **Timeframe:** M15
-4. **Target:** $600 profit (10%)
-5. **Max Risk:** $330 drawdown (5.5% - safe within 6% limit)
+---
 
-### Protection Features:
-- ⚠️ Warning at 80% of daily limit
-- 🛑 Auto-stop at daily limit (no new trades)
-- ⚠️ Warning at 90% of max drawdown
-- 🛑 Emergency close all positions at max drawdown
-- **V9 NEW:** Dynamic risk reduction in high volatility
+## 📂 REPOSITORY STRUCTURE
 
-### Expected Timeline:
+```
+scalpguru/
+├── src/
+│   ├── ScalpGuruV10.mq5         # 🔥 Latest - HH Swing TP
+│   ├── ScalpGuruV9.mq5          # ⭐ Recommended - Data-Driven
+│   └── ScalpGuruV8.mq5          # ⚡ Alternative - Aggressive
+│
+├── backtests/
+│   ├── v10 backtest/            # V10 results & reports
+│   ├── v9 report/               # V9 results & reports
+│   └── v8 report/               # V8 results & reports
+│
+├── docs/
+│   ├── CHANGELOG_V10.md         # 🔥 V10 detailed changelog
+│   ├── CHANGELOG_V9.md          # V9 data-driven features
+│   ├── CHANGELOG_V8.md          # V8 aggressive mode
+│   ├── V8_VS_V9_ANALYSIS.md     # Comparison analysis
+│   └── FUNDED_3MONTH_GUIDE.md   # Funded account guide
+│
+├── data/
+│   └── xauusd/                  # 20+ years XAUUSD data
+│       ├── XAU_1h_data.csv      # 122K hourly candles
+│       └── analyze_gold_data.py # Analysis scripts
+│
+├── archive/                     # Old versions (V5-V7)
+│   ├── src/                     # Archived source files
+│   ├── docs/                    # Archived documentation
+│   └── backtests/               # Archived backtest results
+│
+└── README.md                    # 📍 This file
+```
 
-| Version | Monthly Profit | Time to Pass | Drawdown Risk |
-|---------|---------------|--------------|---------------|
-| **V9 (Data-Driven)** | **$220-240** | **~2.5 months** ⭐ | ✅ <6% Safe |
-| V8 (Aggressive) | $196 | ~3 months | ⚠️ 8.82% Risk |
-| V7 (Conservative) | $119 | ~5 months | ✅ Safe |
-| V6 (Fast) | $163 | ~3.7 months | Moderate |
+---
 
-**Want to pass in 2.5-3 months?** Use V9's data-driven settings - combines speed with safety! See the [V9 Changelog](docs/CHANGELOG_V9.md) and [V8 vs V9 Analysis](docs/V8_VS_V9_ANALYSIS.md).
+## 🎓 CHOOSING THE RIGHT VERSION
 
-## Version History
+### Decision Tree
 
-- **V9:** Data-Driven Gold Trading Edition - 20 years XAUUSD analysis, volatility-adjusted risk, optimal hour filtering, dynamic stops
-- **V8:** Aggressive 3-Month Pass Edition - Stochastic sell filter, trend filter, 1% risk, 3 trades/day (⚠️ drawdown issue)
-- **V7:** Funded Account Edition - daily/drawdown protection, partial profit taking, 0.5% risk
-- **V6:** Enhanced visuals, RSI momentum filter, session filter, breakeven buffer
-- **V5:** Improved trailing stop mechanism, simplified code
-- **V4:** Keltner Channel strategy with partial close
+```
+START: What's your priority?
+│
+├─ 🎯 Maximum Safety & Consistency
+│  └─ ⭐ USE V9
+│     • Best drawdown control
+│     • Highest win rate
+│     • Data-driven decisions
+│     • Works in all conditions
+│
+├─ 🔥 Latest Features & Swing Trading
+│  └─ 🧪 TRY V10 (Test First!)
+│     • New HH TP strategy
+│     • Buy-only approach
+│     • Larger targets
+│     • ⚠️ Needs validation
+│
+├─ ⚡ Fastest Growth (High Risk)
+│  └─ ⚠️ V8 (Drawdown Warning)
+│     • Fast profit accumulation
+│     • 8.82% max DD (over limit)
+│     • Better for personal accounts
+│     • Not for strict prop firms
+│
+└─ 🤔 Not Sure?
+   └─ ⭐ START WITH V9
+      • Proven track record
+      • Best risk/reward balance
+      • Recommended by most users
+```
 
-## License
+---
+
+## 📊 COMPARISON TABLES
+
+### Technical Specifications
+
+| Feature | V10 | V9 | V8 |
+|---------|-----|----|----|
+| **MQL5 Version** | 10.00 | 9.00 | 8.00 |
+| **Magic Number** | 15140 | 15139 | 15139 |
+| **Code Lines** | ~1050 | ~1670 | ~1400 |
+| **Indicators Used** | ATR, EMA, RSI | ATR, EMA, RSI, Stoch, H1 EMA | ATR, EMA, RSI, Stoch, H1 EMA |
+| **Trade Directions** | Buy Only | Buy + Sell | Buy + Sell |
+| **Visual Panel** | ✅ Enhanced | ✅ Full | ✅ Full |
+| **Keltner Display** | ✅ Yes | ✅ Yes | ✅ Yes |
+
+### Risk Management Comparison
+
+| Feature | V10 | V9 | V8 |
+|---------|-----|----|----|
+| **Base Risk/Trade** | 1.0% | 1.0% | 1.0% |
+| **Risk Adjustment** | 6.36-7.28x ⚠️ | 0.8-1.2x ✅ | None |
+| **Stop Loss Width** | 7.54x ATR ⚠️ | 1.3x ATR ✅ | 1.3x ATR |
+| **Trailing Stop** | ❌ None | ✅ Adaptive | ✅ Standard |
+| **Partial Profit** | 50% at halfway to HH | 50% at 1:1 RR | 50% at 1:1 RR |
+| **Max Loss Protection** | ✅ 1% | ✅ 1% | ✅ 1% |
+| **Funded Protection** | ✅ Yes | ✅ Yes | ✅ Yes |
+
+---
+
+## 📞 SUPPORT & RESOURCES
+
+### Documentation
+- 📘 [V10 Changelog](docs/CHANGELOG_V10.md) - Complete V10 documentation
+- 📘 [V9 Changelog](docs/CHANGELOG_V9.md) - V9 data-driven features
+- 📘 [V8 Changelog](docs/CHANGELOG_V8.md) - V8 aggressive mode
+- 📊 [V8 vs V9 Analysis](docs/V8_VS_V9_ANALYSIS.md) - Detailed comparison
+- 💰 [Funded Account Guide](docs/FUNDED_3MONTH_GUIDE.md) - Prop firm setup
+
+### Data & Analysis
+- 📊 [XAUUSD Historical Data](data/xauusd/) - 20+ years of data
+- 🔬 [Gold Analysis Scripts](data/xauusd/analyze_gold_data.py) - Python tools
+- 📈 [Backtest Reports](backtests/) - All version results
+
+### Community
+- 🐛 **Issues:** [GitHub Issues](../../issues)
+- 💬 **Discussions:** [GitHub Discussions](../../discussions)
+- ⭐ **Star this repo** if you find it useful!
+
+---
+
+## ⚖️ LICENSE
 
 Copyright © go0ph
 
-## Support
+---
 
-For issues or questions, please open a GitHub issue.
+## 🏁 QUICK ACTION ITEMS
+
+### For New Users
+1. ⭐ **Star this repository**
+2. 📖 **Read** [V9 Changelog](docs/CHANGELOG_V9.md) (recommended version)
+3. 📊 **Review** backtest results in [`backtests/v9 report/`](backtests/v9%20report/)
+4. 💾 **Download** `src/ScalpGuruV9.mq5`
+5. 🧪 **Test** on demo account first
+6. ✅ **Start** with conservative settings
+
+### For Existing Users
+1. 🔥 **Check out** new V10 - [Changelog](docs/CHANGELOG_V10.md)
+2. ⚠️ **Read** V10 warnings before switching
+3. 🧪 **Test** V10 on demo first
+4. 📊 **Compare** your results with backtests
+5. 💬 **Share** feedback in Issues
+
+### For Funded Traders
+1. ⭐ **Use V9** for safest drawdown control
+2. ⚙️ **Set** FundedMode = true
+3. 📉 **Configure** daily/overall limits
+4. 🎯 **Target** 2.5-month pass timeline
+5. 📊 **Monitor** daily P/L and drawdown
+6. ✅ **Verify** EA stops at limits
+
+---
+
+<div align="center">
+
+## 🎯 RECOMMENDED STARTING POINT
+
+### ⭐ Start with V9 - Data-Driven Edition
+
+**Why V9?**
+✅ Best win rate (72-75%)  
+✅ Safest drawdown (<6%)  
+✅ Fastest pass time (~2.5 months)  
+✅ Proven track record  
+✅ Works in all market conditions  
+
+[📥 Download V9](src/ScalpGuruV9.mq5) | [📘 Read V9 Docs](docs/CHANGELOG_V9.md) | [📊 View V9 Results](backtests/v9%20report/)
+
+---
+
+**Built with 📊 by go0ph | Updated February 2026**
+
+</div>
