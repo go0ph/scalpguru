@@ -54,7 +54,7 @@ input int RSI_Oversold = 53;                // RSI oversold threshold for buys
 input int RSI_Overbought = 645;              // ⚠️ EFFECTIVELY DISABLED (>100) - RSI filter bypassed
 input bool EnableVolumeFilter = false;      
 input double VolumeMultiplier = 1.2;        
-input bool EnableCandleConfirmation = true; 
+input bool EnableCandleConfirmation = false; 
 
 //--- V10: Data-Driven Enhancements
 input group "=== V10 Data-Driven Features ==="
