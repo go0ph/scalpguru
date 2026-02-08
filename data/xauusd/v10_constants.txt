@@ -1,17 +1,17 @@
 // V10 Data-Driven Constants
-// Generated: 2026-01-24 08:20:20
-// Data range: 2020.01.02 to 2025.06.06 (recent 5 years only)
-// Candles analyzed: 32,080
+// Generated: 2026-02-08 02:14:10
+// Data range: 2004.06.11 to 2025.06.06
+// Candles analyzed: 122,028
 
 // Volatility thresholds based on 20-period ATR percentiles
-#define VOL_LOW_THRESHOLD 3.86    // 25th percentile ATR
-#define VOL_HIGH_THRESHOLD 6.24   // 75th percentile ATR
-#define V10_AVG_ATR 5.52
-#define V10_MEDIAN_ATR 4.86
+#define VOL_LOW_THRESHOLD 2.31    // 25th percentile ATR
+#define VOL_HIGH_THRESHOLD 4.6   // 75th percentile ATR
+#define AVG_ATR 3.76
+#define MEDIAN_ATR 3.32
 
-// Optimal hours (top 8 by volatility): [16, 15, 17, 18, 10, 4, 14, 9]
-// Strict optimal hours (top 5): [16, 15, 17, 18, 10]
+// Optimal hours (top 8 by volatility): [15, 16, 17, 18, 14, 19, 10, 0]
+// Strict optimal hours (top 5): [15, 16, 17, 18, 14]
 
 // Use these in IsOptimalTradingHour() function:
-// Standard mode hours: 16, 15, 17, 18, 10, 4, 14, 9
-// Strict mode hours: 16, 15, 17, 18, 10
+// Standard mode hours: 15, 16, 17, 18, 14, 19, 10, 0
+// Strict mode hours: 15, 16, 17, 18, 14
