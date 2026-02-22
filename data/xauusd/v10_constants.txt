@@ -1,5 +1,5 @@
 // V10 Data-Driven Constants
-// Generated: 2026-02-15 01:59:53
+// Generated: 2026-02-22 01:55:12
 // Data range: 2004.06.11 to 2025.06.06
 // Candles analyzed: 122,028
 
